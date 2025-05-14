@@ -82,7 +82,7 @@ class Activities(Base):
    pages_read: Mapped[int | None]
    exercise_weight: Mapped[int | None]
    exercise_reps: Mapped[int | None]
-   date: Mapped[date | None]
+   date: Mapped[date] 
 
    #Many to One - relationship
    user_id: Mapped[int] = mapped_column(ForeignKey('Users.id'))
