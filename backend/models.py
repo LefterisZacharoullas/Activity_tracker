@@ -6,7 +6,7 @@ from .database import Base
 Users_Books = Table(
    "UsersBooks",
    Base.metadata,
-   Column("id", Integer, primary_key= True),
+   Column("id", Integer, primary_key= True, index= True, autoincrement= True),
    Column("users_id", Integer, ForeignKey("Users.id")),
    Column("book_id", Integer, ForeignKey("Books.id")),
 )
@@ -14,7 +14,7 @@ Users_Books = Table(
 Books_Authors = Table(
    "BooksAuthors",
    Base.metadata,
-   Column("id" , Integer, primary_key= True),
+   Column("id" , Integer, primary_key= True, index= True, autoincrement= True),
    Column("book_id", Integer, ForeignKey("Books.id")),
    Column("author_id", Integer, ForeignKey("Authors.id"))
 )
@@ -22,10 +22,10 @@ Books_Authors = Table(
 class Users(Base):
    __tablename__ = "Users"
 
-   id: Mapped[int] = mapped_column(primary_key=True)
+   id: Mapped[int] = mapped_column(Integer, primary_key=True, index= True, autoincrement=True)
    name: Mapped[str] = mapped_column(String(60), nullable= False)
    surname: Mapped[str | None]
-   email: Mapped[str | None]
+   email: Mapped[str | None] = mapped_column(unique= True, index= True)
    active: Mapped[bool]
    password: Mapped[str] = mapped_column(nullable= False)
 
@@ -44,7 +44,7 @@ class Users(Base):
 class Books(Base):
    __tablename__ = "Books"
 
-   id: Mapped[int] = mapped_column(primary_key=True)
+   id: Mapped[int] = mapped_column(Integer, primary_key=True, index= True, autoincrement=True)
    book_name: Mapped[str] = mapped_column(nullable= False)
    last_page: Mapped[int] = mapped_column(nullable= False)
 
@@ -64,7 +64,7 @@ class Books(Base):
 class Author(Base):
    __tablename__ = "Authors"
 
-   id: Mapped[int] = mapped_column(primary_key=True)
+   id: Mapped[int] = mapped_column(Integer, primary_key=True, index= True, autoincrement=True)
    author_name: Mapped[str] = mapped_column(nullable= False)
    author_surname: Mapped[str | None]
 
@@ -78,14 +78,14 @@ class Author(Base):
 class Activities(Base):
    __tablename__ = "Activities"
 
-   id: Mapped[int] = mapped_column(primary_key= True)
+   id: Mapped[int] = mapped_column(Integer, primary_key=True, index= True, autoincrement=True)
    pages_read: Mapped[int | None]
    exercise_weight: Mapped[int | None]
    exercise_reps: Mapped[int | None]
-   date: Mapped[date] 
+   date: Mapped[date | None] 
+   user_id: Mapped[int] = mapped_column(ForeignKey('Users.id'), nullable= False)
 
    #Many to One - relationship
-   user_id: Mapped[int] = mapped_column(ForeignKey('Users.id'))
    user: Mapped["Users"] = relationship(
       back_populates="activities"
    )   

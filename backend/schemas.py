@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from datetime import date
 
-class Books(BaseModel):
+class BooksOut(BaseModel):
     id: int
     book_name: str
     last_page: int
@@ -9,7 +9,7 @@ class Books(BaseModel):
     class config:
         orm_mode = True
 
-class Activities(BaseModel):
+class ActivitiesOut(BaseModel):
     id: int
     page_read: int | None = None
     exercise_weight: int | None = None
@@ -20,17 +20,34 @@ class Activities(BaseModel):
     class Config:
         orm_mode = True
 
-class User_info(BaseModel):
+class UserOut(BaseModel):
     id: int
     name: str
     surname: str | None = None
     email: str | None = None
     active: bool = True
-    books: list[Books] = []
-    activities: list[Activities] = []
-
     class Config:
         orm_mode = True
 
-class User_secret(User_info):
+class User_secret(UserOut):
+    password: str
+
+# For creating a new book
+class BookCreate(BaseModel):
+    book_name: str
+    last_page: int
+
+# For creating a new activity
+class ActivityCreate(BaseModel):
+    pages_read: int | None = None
+    exercise_weight: int | None = None
+    exercise_reps: int | None = None
+    date: date
+
+# For user registration (input only)
+class UserCreate(BaseModel):
+    name: str
+    surname: str | None = None
+    email: str | None = None
+    active: bool = True
     password: str
