@@ -18,7 +18,7 @@ async def get_all_books(db: Session = Depends(get_db)):
     ).all()
     return db_books
 
-@router.put("/", response_model=BookCreate)
+@router.post("/", response_model=BookCreate)
 async def put_book(book: BookCreate, db: Session = Depends(get_db)):
     db_book = Books(**book.model_dump())
     db.add(db_book)

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from ..database import get_db
-from ..models import Users, Activities, Books
+from ..models import Users, Activities, Books, Author
 from ..schemas import UserOut, ActivitiesOut, BooksOut
 from ..schemas import ActivityCreate
 from ..security import get_current_user
@@ -20,8 +20,12 @@ async def get_users_info(current_user: Users = Depends(get_current_user)):
 async def get_users_activities(current_user: Users = Depends(get_current_user)):
     return current_user.activities
 
-@router.put("/activities", response_model= ActivityCreate)
-async def put_users_activities(activity: ActivityCreate, current_user: Users = Depends(get_current_user), db: Session = Depends(get_db)):
+@router.post("/activities", response_model= ActivityCreate)
+async def put_users_activities(
+    activity: ActivityCreate, 
+    current_user: Users = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
     db_activity = Activities(**activity.model_dump(), user_id= current_user.id)
     db.add(db_activity)
     db.commit()
@@ -32,11 +36,27 @@ async def put_users_activities(activity: ActivityCreate, current_user: Users = D
 async def get_users_activities(current_user: Users = Depends(get_current_user)):
     return current_user.books
 
-@router.put("/book", response_model= BooksOut)
+@router.post("/book", response_model= BooksOut)
 async def set_users_book(
     book_name:str , 
     author_name: str, 
     current_user: Users = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    pass
+    book = db.scalar(
+        select(Books).join(Books.authors).where(
+            Books.book_name == book_name,
+            Author.author_name == author_name
+        )
+    )
+
+    if not book:
+        raise HTTPException(404, "Book with this author doesnt exist")
+
+    if book in current_user.books:
+        raise HTTPException(400, "Book already in user's collection")
+    
+    current_user.books.append(book)
+    db.commit()
+    db.refresh(book)
+    return book
