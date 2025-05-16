@@ -1,4 +1,4 @@
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship 
+from sqlalchemy.orm import Mapped, mapped_column, relationship 
 from sqlalchemy import String, Table, Column, Integer, ForeignKey
 from datetime import date
 from .database import Base
@@ -23,7 +23,7 @@ class Users(Base):
    __tablename__ = "Users"
 
    id: Mapped[int] = mapped_column(Integer, primary_key=True, index= True, autoincrement=True)
-   name: Mapped[str] = mapped_column(String(60), nullable= False)
+   name: Mapped[str] = mapped_column(String(60), unique=True, nullable= False, index= True)
    surname: Mapped[str | None]
    email: Mapped[str | None] = mapped_column(unique= True, index= True)
    active: Mapped[bool]
