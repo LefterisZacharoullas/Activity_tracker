@@ -4,58 +4,119 @@ from sqlalchemy import select
 from ..database import get_db
 from ..models import Users, Activities, Books, Author
 from ..schemas import UserOut, ActivitiesOut, BooksOut
-from ..schemas import ActivityCreate
-from ..security import get_current_user
+from ..schemas import ActivityCreate, UserUpdate
+from ..security import get_current_user, get_password_hash
 
 router = APIRouter(
     prefix="/user",
     tags=["users_info"]
 )
 
-@router.get("/user_info", response_model= UserOut)
+@router.get("/user_info", response_model=UserOut)
 async def get_users_info(current_user: Users = Depends(get_current_user)):
+    """🔍 Get current user's public information."""
     return current_user
 
-@router.get("/activities", response_model= list[ActivitiesOut])
+@router.put("/user_info", response_model=UserOut, response_model_exclude_none=True)
+async def upgrade_user_info(
+    user_update: UserUpdate,
+    current_user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """✏️ Update current user's info (only fields provided in request)."""
+    update_data = user_update.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(current_user, field, value)
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+@router.put("/user_name")
+async def update_user_name(
+    name: str,
+    current_user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    ✏️ Update the current user's name.
+
+    - ❌ Rejects if the name already exists in the database.
+    - ❌ Rejects if the name contains non-letter characters.
+    - ✅ Updates the name if valid and unique.
+    """
+    name_db = db.scalar(
+        select(Users).where(Users.name == name)
+    )
+    if name_db:
+        raise HTTPException(400, "User with this name already exist")
+
+    if not name.isalpha():
+        raise HTTPException(422, "Name must contain only letters")
+    
+    current_user.name = name
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+@router.put("/update_password")
+async def update_password(
+    password: str,
+    current_user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    🔒 Update the current user's password.
+    """
+    current_user.password = get_password_hash(password)
+    db.commit()
+    db.refresh(current_user)
+    return {"status" : "your new password was set"}
+    
+@router.get("/activities", response_model=list[ActivitiesOut])
 async def get_users_activities(current_user: Users = Depends(get_current_user)):
+    """📋 Get all activities associated with the current user."""
     return current_user.activities
 
-@router.post("/activities", response_model= ActivityCreate)
+@router.post("/activities", response_model=ActivityCreate)
 async def put_users_activities(
     activity: ActivityCreate, 
     current_user: Users = Depends(get_current_user), 
     db: Session = Depends(get_db)
 ):
-    db_activity = Activities(**activity.model_dump(), user_id= current_user.id)
+    """➕ Add a new activity to the current user's activities."""
+    db_activity = Activities(**activity.model_dump(), user_id=current_user.id)
     db.add(db_activity)
     db.commit()
     db.refresh(db_activity)
     return db_activity
 
-@router.get("/books", response_model= list[BooksOut])
+@router.get("/books", response_model=list[BooksOut])
 async def get_users_activities(current_user: Users = Depends(get_current_user)):
+    """📚 Get all books saved by the current user."""
     return current_user.books
 
-@router.post("/book", response_model= BooksOut)
+@router.post("/book", response_model=BooksOut)
 async def set_users_book(
-    book_name:str , 
-    author_name: str, 
+    book_name: str,
+    author_name: str,
     current_user: Users = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """📥 Add an existing book by author to the user's collection.
+
+    - Validates that the book exists and is written by the given author.
+    - Prevents duplicates.
+    """
     book = db.scalar(
         select(Books).join(Books.authors).where(
             Books.book_name == book_name,
             Author.author_name == author_name
         )
     )
-
     if not book:
-        raise HTTPException(404, "Book with this author doesnt exist")
-
+        raise HTTPException(404, "Book with this author doesn't exist")
     if book in current_user.books:
         raise HTTPException(400, "Book already in user's collection")
-    
     current_user.books.append(book)
     db.commit()
     db.refresh(book)

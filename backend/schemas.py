@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, field_validator
 from datetime import date
 
 class BooksOut(BaseModel):
@@ -20,14 +20,26 @@ class ActivitiesOut(BaseModel):
     class Config:
         orm_mode = True
 
+class AuthorOut(BaseModel):
+    id: int
+    author_name: str
+    author_surname: str | None = None
+
+    class Config:
+        orm_mode = True
+
 class UserOut(BaseModel):
     id: int
     name: str
     surname: str | None = None
-    email: str | None = None
+    email: EmailStr | None = None
     active: bool = True
     class Config:
         orm_mode = True
+
+class AuthorCreate(BaseModel):
+    author_name: str
+    author_surname: str | None = None
 
 class BookCreate(BaseModel):
     book_name: str
@@ -42,10 +54,28 @@ class ActivityCreate(BaseModel):
 class UserCreate(BaseModel):
     name: str
     surname: str | None = None
-    email: str | None = None
+    email: EmailStr | None = None
     active: bool = True
-    password: str
+
+    @field_validator('name', 'surname', mode='after')
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        if not v.isalpha():
+            raise ValueError("Name must contain only letters")
+        return v
     
+class UserUpdate(BaseModel):
+    surname: str | None = None
+    email: EmailStr | None = None
+    active: bool = True
+
+    @field_validator('surname', mode='after')
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        if not v.isalpha():
+            raise ValueError("Name must contain only letters")
+        return v
+
 class User_secret(UserCreate):
     password: str
 class Token(BaseModel):
