@@ -79,7 +79,7 @@ class Activities(Base):
    __tablename__ = "Activities"
 
    id: Mapped[int] = mapped_column(Integer, primary_key=True, index= True, autoincrement=True)
-   pages_read: Mapped[int | None]
+   exercise_name: Mapped[str | None] 
    exercise_weight: Mapped[int | None]
    exercise_reps: Mapped[int | None]
    date: Mapped[date | None] 
@@ -89,3 +89,27 @@ class Activities(Base):
    user: Mapped["Users"] = relationship(
       back_populates="activities"
    )   
+
+class ReadingLog(Base):
+   __tablename__ = "Reading"
+
+   id: Mapped[int] = mapped_column(Integer, primary_key=True, index= True, autoincrement=True) 
+   book_id: Mapped[int] = mapped_column(ForeignKey("Books.id"), nullable= False)
+   pages_read: Mapped[int | None]
+   status_id: Mapped[int] = mapped_column(ForeignKey("Status.id"), nullable= False)
+   date: Mapped[date]
+
+class Todo(Base):
+   __tablename__ = "Todo"
+
+   id: Mapped[int] = mapped_column(Integer, primary_key=True, index= True, autoincrement=True) 
+   user_id: Mapped[int] = mapped_column(ForeignKey("Users.id"), nullable= False)
+   text: Mapped[str]
+   status_id: Mapped[int] = mapped_column(ForeignKey("Status.id"), nullable= False)
+   date_created: Mapped[date]
+
+class Status(Base):
+   __tablename__ = "Status"
+
+   id: Mapped[int] = mapped_column(Integer, primary_key=True, index= True, autoincrement=True) 
+   status: Mapped[str] = mapped_column(unique= True)

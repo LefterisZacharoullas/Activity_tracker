@@ -7,26 +7,27 @@ class BooksOut(BaseModel):
     last_page: int
 
     class config:
-        orm_mode = True
+        from_attributes = True
 
 class ActivitiesOut(BaseModel):
     id: int
-    page_read: int | None = None
+    exercise_name: str | None = None
     exercise_weight: int | None = None
     exercise_reps: int | None = None
     date: date
     user_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class AuthorOut(BaseModel):
     id: int
     author_name: str
     author_surname: str | None = None
+    books: list[BooksOut] | None = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class UserOut(BaseModel):
     id: int
@@ -35,7 +36,7 @@ class UserOut(BaseModel):
     email: EmailStr | None = None
     active: bool = True
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class AuthorCreate(BaseModel):
     author_name: str
@@ -46,7 +47,7 @@ class BookCreate(BaseModel):
     last_page: int
 
 class ActivityCreate(BaseModel):
-    pages_read: int | None = None
+    exercise_name: str | None = None
     exercise_weight: int | None = None
     exercise_reps: int | None = None
     date: date

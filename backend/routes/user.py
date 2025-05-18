@@ -77,7 +77,7 @@ async def get_users_activities(current_user: Users = Depends(get_current_user)):
     """📋 Get all activities associated with the current user."""
     return current_user.activities
 
-@router.post("/activities", response_model=ActivityCreate)
+@router.post("/activities", response_model=ActivitiesOut)
 async def put_users_activities(
     activity: ActivityCreate, 
     current_user: Users = Depends(get_current_user), 

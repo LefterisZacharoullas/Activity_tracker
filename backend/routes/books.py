@@ -18,6 +18,14 @@ async def get_all_books(db: Session = Depends(get_db)):
     ).all()
     return db_books
 
+@router.get("/authors", response_model=list[AuthorOut])
+async def get_all_authors(db: Session = Depends(get_db)):
+    """ Get a list of all authors in the database."""
+    db_authors = db.scalars(
+        select(Author)
+    ).all()
+    return db_authors
+
 @router.post("/books", response_model=BooksOut)
 async def put_book(book: BookCreate, db: Session = Depends(get_db)):
     """➕ Add a new book to the database."""
@@ -37,7 +45,7 @@ async def put_book(author: AuthorCreate, db: Session = Depends(get_db)):
     return author_db
 
 @router.post("/books/add-author", response_model=AuthorOut)
-async def set_author_book(author: AuthorCreate, book_name: str, db: Session = Depends(get_db)):
+async def set_author_book(author_name: str, book_name: str, db: Session = Depends(get_db)):
     """
     🔗 Associate an existing author with an existing book.
 
@@ -45,10 +53,10 @@ async def set_author_book(author: AuthorCreate, book_name: str, db: Session = De
     - Links the author to the book.
     """
     author_db = db.scalar(
-        select(Author).where(Author.author_name == author.author_name)
+        select(Author).where(Author.author_name == author_name)
     )
     if not author_db:
-        raise HTTPException(404, f"Author '{author.author_name}' doesn't exist")
+        raise HTTPException(404, f"Author '{author_name}' doesn't exist")
     book = db.scalar(
         select(Books).where(Books.book_name == book_name)
     )
