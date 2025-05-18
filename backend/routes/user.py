@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from ..database import get_db
-from ..models import Users, Activities, Books, Author
-from ..schemas import UserOut, ActivitiesOut, BooksOut
-from ..schemas import ActivityCreate, UserUpdate
+from ..models import Users, Activities, Books, Author, ReadingLog, Status
+from ..schemas import UserOut, ActivitiesOut, BooksOut, ReadingOut
+from ..schemas import ActivityCreate, UserUpdate, ReadingCreate
 from ..security import get_current_user, get_password_hash
 
 router = APIRouter(
@@ -121,3 +121,42 @@ async def set_users_book(
     db.commit()
     db.refresh(book)
     return book
+
+#Logic of the Reading books begin
+@router.post("/reading", response_model= ReadingOut)
+async def set_reading_book(
+    reading: ReadingCreate,
+    current_user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    book = db.scalars(
+        select(Books).join(Books.users).where(
+            Books.book_name == reading.book_name,
+            Users.id == current_user.id,
+        )
+    ).one_or_none()
+
+    if not book:
+        raise HTTPException(404, "Book that user provide doesn't exist in user's collection")
+    
+    status = db.scalar(
+        select(Status).where(Status.status == reading.status) 
+    )
+    
+    reading_db = ReadingLog(
+        user_id= current_user.id,
+        book_id = book.id,
+        pages_read= reading.pages_read,
+        status_id= status.id,
+        date= reading.date
+    )
+    db.add(reading_db)
+    db.commit()
+    db.refresh(reading_db)
+    return reading_db    
+
+@router.get("/reading", response_model= list[ReadingOut])
+async def users_reading(
+    current_user: Users = Depends(get_current_user),
+):
+    return current_user.readinglogs

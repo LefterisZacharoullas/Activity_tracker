@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, field_validator
 from datetime import date
+from enum import Enum
 
 class BooksOut(BaseModel):
     id: int
@@ -85,3 +86,24 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: str | None = None
+
+class Status(str, Enum):
+    not_started = "Not Started"
+    in_progress = "In Progress"
+    completed = "Completed"
+
+class ReadingCreate(BaseModel):
+    book_name: str 
+    pages_read: int | None
+    status: Status
+    date: date
+
+class ReadingOut(BaseModel):
+    user_id: int
+    book_id: int
+    pages_read: int | None
+    status_id: int
+    date: date
+
+    class Config:
+        from_attributes = True

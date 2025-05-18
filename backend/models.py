@@ -40,6 +40,11 @@ class Users(Base):
       back_populates="user"
    )
 
+   #One to Many Users ReadingLogs
+   readinglogs: Mapped[list["ReadingLog"]] = relationship(
+      back_populates="user"
+   )
+
 
 class Books(Base):
    __tablename__ = "Books"
@@ -93,11 +98,17 @@ class Activities(Base):
 class ReadingLog(Base):
    __tablename__ = "Reading"
 
-   id: Mapped[int] = mapped_column(Integer, primary_key=True, index= True, autoincrement=True) 
+   id: Mapped[int] = mapped_column(Integer, primary_key=True, index= True, autoincrement=True)
+   user_id: Mapped[int] = mapped_column(ForeignKey("Users.id"), nullable= False) 
    book_id: Mapped[int] = mapped_column(ForeignKey("Books.id"), nullable= False)
    pages_read: Mapped[int | None]
    status_id: Mapped[int] = mapped_column(ForeignKey("Status.id"), nullable= False)
    date: Mapped[date]
+
+   #One - many relationship
+   user: Mapped["Users"] = relationship(
+      back_populates="readinglogs"
+   )
 
 class Todo(Base):
    __tablename__ = "Todo"
