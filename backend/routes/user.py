@@ -1,8 +1,9 @@
+import backend.dependencies as dependencies
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from ..database import get_db
-from ..models import Users, Activities, Books, Author, ReadingLog, Status
+from ..models import Users, Activities, Books, ReadingLog, Status
 from ..schemas import UserOut, ActivitiesOut, BooksOut, ReadingOut
 from ..schemas import ActivityCreate, UserUpdate, ReadingCreate
 from ..security import get_current_user, get_password_hash
@@ -12,18 +13,25 @@ router = APIRouter(
     tags=["users_info"]
 )
 
+# ─────────────────────────────────────────────────────────────
+# 📌 USER INFO ENDPOINTS
+# ─────────────────────────────────────────────────────────────
+
 @router.get("/user_info", response_model=UserOut)
 async def get_users_info(current_user: Users = Depends(get_current_user)):
     """🔍 Get current user's public information."""
     return current_user
 
-@router.put("/user_info", response_model=UserOut, response_model_exclude_none=True)
+@router.patch("/user_info", response_model=UserOut, response_model_exclude_none=True)
 async def upgrade_user_info(
     user_update: UserUpdate,
     current_user: Users = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """✏️ Update current user's info (only fields provided in request)."""
+    """
+    ✏️ Update only the provided fields of the current user's profile.
+    Unchanged fields will be left as-is.
+    """
     update_data = user_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(current_user, field, value)
@@ -31,18 +39,16 @@ async def upgrade_user_info(
     db.refresh(current_user)
     return current_user
 
-@router.put("/user_name")
+@router.patch("/user_name")
 async def update_user_name(
     name: str,
     current_user: Users = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    ✏️ Update the current user's name.
-
-    - ❌ Rejects if the name already exists in the database.
-    - ❌ Rejects if the name contains non-letter characters.
-    - ✅ Updates the name if valid and unique.
+    ✏️ Change the current user's name.
+    - Rejects names already taken.
+    - Accepts only alphabetic characters.
     """
     name_db = db.scalar(
         select(Users).where(Users.name == name)
@@ -58,7 +64,7 @@ async def update_user_name(
     db.refresh(current_user)
     return current_user
 
-@router.put("/update_password")
+@router.patch("/update_password")
 async def update_password(
     password: str,
     current_user: Users = Depends(get_current_user),
@@ -71,6 +77,10 @@ async def update_password(
     db.commit()
     db.refresh(current_user)
     return {"status" : "your new password was set"}
+
+# ─────────────────────────────────────────────────────────────
+# 🗂️ ACTIVITY MANAGEMENT ENDPOINTS
+# ─────────────────────────────────────────────────────────────
     
 @router.get("/activities", response_model=list[ActivitiesOut])
 async def get_users_activities(current_user: Users = Depends(get_current_user)):
@@ -90,31 +100,39 @@ async def put_users_activities(
     db.refresh(db_activity)
     return db_activity
 
+@router.delete("/activities/{activitie_id}")
+async def put_users_activities(
+    db_activity: Activities = Depends(dependencies.verify_activity_id), 
+    current_user: Users = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """❌ Delete an activity from the user's list by its ID."""
+    if not db_activity in current_user.activities:
+        raise HTTPException("The activitie that provided doesnt'exist in users collection")
+    db.delete(db_activity)
+    db.commit()
+    return {"status" : "Successfully deleted"}
+
+# ─────────────────────────────────────────────────────────────
+# 📚 BOOK COLLECTION ENDPOINTS
+# ─────────────────────────────────────────────────────────────
+
 @router.get("/books", response_model=list[BooksOut])
 async def get_users_activities(current_user: Users = Depends(get_current_user)):
     """📚 Get all books saved by the current user."""
     return current_user.books
 
-@router.post("/book", response_model=BooksOut)
+@router.post("/book/{book_id}", response_model=BooksOut)
 async def set_users_book(
-    book_name: str,
-    author_name: str,
+    book: Books = Depends(dependencies.verify_book_id),
     current_user: Users = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """📥 Add an existing book by author to the user's collection.
-
-    - Validates that the book exists and is written by the given author.
-    - Prevents duplicates.
     """
-    book = db.scalar(
-        select(Books).join(Books.authors).where(
-            Books.book_name == book_name,
-            Author.author_name == author_name
-        )
-    )
-    if not book:
-        raise HTTPException(404, "Book with this author doesn't exist")
+    📥 Add an existing book to the user's collection.
+    - Book must exist.
+    - Book must not already be in user's list.
+    """
     if book in current_user.books:
         raise HTTPException(400, "Book already in user's collection")
     current_user.books.append(book)
@@ -122,41 +140,73 @@ async def set_users_book(
     db.refresh(book)
     return book
 
-#Logic of the Reading books begin
-@router.post("/reading", response_model= ReadingOut)
-async def set_reading_book(
-    reading: ReadingCreate,
+@router.delete("/book/{book_id}")
+async def delete_user_book(
+    book: Books = Depends(dependencies.verify_book_id),
     current_user: Users = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    book = db.scalars(
-        select(Books).join(Books.users).where(
-            Books.book_name == reading.book_name,
-            Users.id == current_user.id,
-        )
-    ).one_or_none()
-
-    if not book:
-        raise HTTPException(404, "Book that user provide doesn't exist in user's collection")
-    
-    status = db.scalar(
-        select(Status).where(Status.status == reading.status) 
-    )
-    
-    reading_db = ReadingLog(
-        user_id= current_user.id,
-        book_id = book.id,
-        pages_read= reading.pages_read,
-        status_id= status.id,
-        date= reading.date
-    )
-    db.add(reading_db)
+    """
+    ❌ Remove a book from the user's collection.
+    - Book must exist in the user's collection.
+    """
+    if not book in current_user.books:
+        raise HTTPException(404, "This Book doesn't exist in user's collection")
+    current_user.books.remove(book)
     db.commit()
-    db.refresh(reading_db)
-    return reading_db    
+    db.refresh(current_user)
+    return {"status" : "Book successfully removed"} 
+
+# ─────────────────────────────────────────────────────────────
+# 📖 READING LOG ENDPOINTS
+# ─────────────────────────────────────────────────────────────
 
 @router.get("/reading", response_model= list[ReadingOut])
 async def users_reading(
     current_user: Users = Depends(get_current_user),
 ):
+    """📖 Return the user's reading history (logs)."""
     return current_user.readinglogs
+
+@router.post("/reading/{book_id}/status/{status_id}", response_model= ReadingOut)
+async def set_reading_book(
+    reading: ReadingCreate,
+    book: Books = Depends(dependencies.verify_book_id),
+    status: Status = Depends(dependencies.verify_status_id),
+    current_user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    📝 Add a book to the user's reading log with a status (e.g., reading, finished).
+    - Book must exist in the user's collection.
+    """
+    if not book in current_user.books:
+        raise HTTPException(404, "Book that user provide doesn't exist in user's collection")
+
+    reading_db = ReadingLog(
+        **reading.model_dump(),
+        user_id= current_user.id,
+        book_id = book.id,
+        status_id= status.id,
+    )
+    db.add(reading_db)
+    db.commit()
+    db.refresh(reading_db)
+    return reading_db
+
+@router.delete("/reading/{reading_id}")
+async def users_reading(
+    reading: ReadingLog = Depends(dependencies.verify_reading_id),
+    current_user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    ❌ Remove a reading log entry.
+    - Must exist in the user's reading logs.
+    """
+    if not reading in current_user.readinglogs:
+        raise HTTPException(404, "Reading that user provide doesn't exist in user's collection")
+    
+    db.delete(reading)
+    db.commit()
+    return {"status" : "Successfully deleted"}

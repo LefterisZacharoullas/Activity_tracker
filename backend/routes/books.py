@@ -2,12 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from ..database import get_db
-from ..models import Books, Author
+from ..models import Books, Author, Status
 from ..schemas import BooksOut, AuthorOut
 from ..schemas import BookCreate, AuthorCreate
+from ..dependencies import verify_author_id, verify_book_id
 
 router = APIRouter(
-    tags=["books, Authors"]
+    tags=["books, Authors, Status"]
 )
 
 @router.get("/books", response_model=list[BooksOut])
@@ -26,9 +27,22 @@ async def get_all_authors(db: Session = Depends(get_db)):
     ).all()
     return db_authors
 
+@router.get("/status")
+async def get_all_status(db: Session = Depends(get_db)):
+    """ Get the IDs of status in the database."""
+    db_status = db.scalars(
+        select(Status)
+    ).all()
+    return db_status
+
 @router.post("/books", response_model=BooksOut)
 async def put_book(book: BookCreate, db: Session = Depends(get_db)):
     """➕ Add a new book to the database."""
+    db_book = db.scalar(
+        select(Books).where(book.book_name == Books.book_name)
+    )
+    if db_book:
+        raise HTTPException(400, "This book already exist")
     db_book = Books(**book.model_dump())
     db.add(db_book)
     db.commit()
@@ -38,31 +52,33 @@ async def put_book(book: BookCreate, db: Session = Depends(get_db)):
 @router.post("/authors", response_model=AuthorOut)
 async def put_book(author: AuthorCreate, db: Session = Depends(get_db)):
     """✍️ Add a new author to the database."""
+    author_db = db.scalar(
+        select(Author).where(author.author_name == Author.author_name)
+    )
+    if author_db:
+        raise HTTPException(400, "This book already exist")
     author_db = Author(**author.model_dump())
     db.add(author_db)
     db.commit()
     db.refresh(author_db)
     return author_db
 
-@router.post("/books/add-author", response_model=AuthorOut)
-async def set_author_book(author_name: str, book_name: str, db: Session = Depends(get_db)):
+@router.post("/books/{book_id}/authors/{author_id}", response_model=AuthorOut)
+async def set_author_book(
+    book: Books = Depends(verify_book_id),
+    author: Author = Depends(verify_author_id),
+    db: Session = Depends(get_db)
+):
     """
     🔗 Associate an existing author with an existing book.
 
     - Ensures both author and book exist.
     - Links the author to the book.
     """
-    author_db = db.scalar(
-        select(Author).where(Author.author_name == author_name)
-    )
-    if not author_db:
-        raise HTTPException(404, f"Author '{author_name}' doesn't exist")
-    book = db.scalar(
-        select(Books).where(Books.book_name == book_name)
-    )
-    if not book:
-        raise HTTPException(404, f"Book '{book_name}' doesn't exist")
-    book.authors.append(author_db)
+    if author in book.authors:
+        raise HTTPException(400, "This author is already related to the book")
+
+    book.authors.append(author)
     db.commit()
     db.refresh(book)  # To get updated relationships 
-    return author_db
+    return author
