@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 from ..database import get_db
 from ..models import Users
-from ..schemas import User_secret, UserCreate, Token
+from ..schemas import User_secret, Token, UserOut
 from ..security import get_password_hash, authenticate_user, create_access_token
 
 
@@ -26,7 +26,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.post("/signup", response_model= UserCreate)
+@router.post("/signup", response_model= UserOut)
 async def create_user(user: User_secret, db: Session = Depends(get_db)):
     stmt = select(Users).where(Users.name == user.name)
     username = db.scalars(stmt).one_or_none()

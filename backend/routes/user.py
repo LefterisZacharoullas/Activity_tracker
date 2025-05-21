@@ -1,11 +1,10 @@
-import backend.dependencies as dependencies
+from backend import dependencies
+from backend import schemas 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from ..database import get_db
 from ..models import Users, Activities, Books, ReadingLog, Status
-from ..schemas import UserOut, ActivitiesOut, BooksOut, ReadingOut
-from ..schemas import ActivityCreate, UserUpdate, ReadingCreate
 from ..security import get_current_user, get_password_hash
 
 router = APIRouter(
@@ -17,14 +16,14 @@ router = APIRouter(
 # 📌 USER INFO ENDPOINTS
 # ─────────────────────────────────────────────────────────────
 
-@router.get("/user_info", response_model=UserOut)
+@router.get("/user_info", response_model=schemas.UserOut)
 async def get_users_info(current_user: Users = Depends(get_current_user)):
     """🔍 Get current user's public information."""
     return current_user
 
-@router.patch("/user_info", response_model=UserOut, response_model_exclude_none=True)
+@router.patch("/user_info", response_model=schemas.UserOut, response_model_exclude_none=True)
 async def upgrade_user_info(
-    user_update: UserUpdate,
+    user_update: schemas.UserUpdate,
     current_user: Users = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -82,14 +81,14 @@ async def update_password(
 # 🗂️ ACTIVITY MANAGEMENT ENDPOINTS
 # ─────────────────────────────────────────────────────────────
     
-@router.get("/activities", response_model=list[ActivitiesOut])
+@router.get("/activities", response_model=list[schemas.ActivitiesOut])
 async def get_users_activities(current_user: Users = Depends(get_current_user)):
     """📋 Get all activities associated with the current user."""
     return current_user.activities
 
-@router.post("/activities", response_model=ActivitiesOut)
+@router.post("/activities", response_model=schemas.ActivitiesOut)
 async def put_users_activities(
-    activity: ActivityCreate, 
+    activity: schemas.ActivityCreate, 
     current_user: Users = Depends(get_current_user), 
     db: Session = Depends(get_db)
 ):
@@ -100,7 +99,7 @@ async def put_users_activities(
     db.refresh(db_activity)
     return db_activity
 
-@router.delete("/activities/{activitie_id}")
+@router.delete("/activities/{activity_id}")
 async def put_users_activities(
     db_activity: Activities = Depends(dependencies.verify_activity_id), 
     current_user: Users = Depends(get_current_user), 
@@ -108,7 +107,7 @@ async def put_users_activities(
 ):
     """❌ Delete an activity from the user's list by its ID."""
     if not db_activity in current_user.activities:
-        raise HTTPException("The activitie that provided doesnt'exist in users collection")
+        raise HTTPException(404 , "The activitie that provided doesnt'exist in users collection")
     db.delete(db_activity)
     db.commit()
     return {"status" : "Successfully deleted"}
@@ -117,12 +116,12 @@ async def put_users_activities(
 # 📚 BOOK COLLECTION ENDPOINTS
 # ─────────────────────────────────────────────────────────────
 
-@router.get("/books", response_model=list[BooksOut])
+@router.get("/books", response_model=list[schemas.BooksOut])
 async def get_users_activities(current_user: Users = Depends(get_current_user)):
     """📚 Get all books saved by the current user."""
     return current_user.books
 
-@router.post("/book/{book_id}", response_model=BooksOut)
+@router.post("/book/{book_id}", response_model=schemas.BooksOut)
 async def set_users_book(
     book: Books = Depends(dependencies.verify_book_id),
     current_user: Users = Depends(get_current_user),
@@ -161,16 +160,16 @@ async def delete_user_book(
 # 📖 READING LOG ENDPOINTS
 # ─────────────────────────────────────────────────────────────
 
-@router.get("/reading", response_model= list[ReadingOut])
+@router.get("/reading", response_model= list[schemas.ReadingOut])
 async def users_reading(
     current_user: Users = Depends(get_current_user),
 ):
     """📖 Return the user's reading history (logs)."""
     return current_user.readinglogs
 
-@router.post("/reading/{book_id}/status/{status_id}", response_model= ReadingOut)
+@router.post("/reading/{book_id}/status/{status_id}", response_model= schemas.ReadingOut)
 async def set_reading_book(
-    reading: ReadingCreate,
+    reading: schemas.ReadingCreate,
     book: Books = Depends(dependencies.verify_book_id),
     status: Status = Depends(dependencies.verify_status_id),
     current_user: Users = Depends(get_current_user),

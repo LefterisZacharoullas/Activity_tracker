@@ -3,6 +3,14 @@ from sqlalchemy import String, Table, Column, Integer, ForeignKey
 from datetime import date
 from .database import Base
 
+class ReprMixin:
+   def __repr__(self):
+      column_values = ", ".join(
+         f"{col.name}={getattr(self, col.name)!r}"
+         for col in self.__table__.columns
+      )
+      return f"<{self.__class__.__name__}({column_values})>"
+
 Users_Books = Table(
    "UsersBooks",
    Base.metadata,
@@ -19,7 +27,7 @@ Books_Authors = Table(
    Column("author_id", Integer, ForeignKey("Authors.id"))
 )
 
-class Users(Base):
+class Users(Base, ReprMixin):
    __tablename__ = "Users"
 
    id: Mapped[int] = mapped_column(Integer, primary_key=True, index= True, autoincrement=True)
@@ -46,7 +54,7 @@ class Users(Base):
    )
 
 
-class Books(Base):
+class Books(Base, ReprMixin):
    __tablename__ = "Books"
 
    id: Mapped[int] = mapped_column(Integer, primary_key=True, index= True, autoincrement=True)
@@ -66,7 +74,7 @@ class Books(Base):
    )
 
 
-class Author(Base):
+class Author(Base, ReprMixin):
    __tablename__ = "Authors"
 
    id: Mapped[int] = mapped_column(Integer, primary_key=True, index= True, autoincrement=True)
@@ -80,7 +88,7 @@ class Author(Base):
    )
 
 
-class Activities(Base):
+class Activities(Base, ReprMixin):
    __tablename__ = "Activities"
 
    id: Mapped[int] = mapped_column(Integer, primary_key=True, index= True, autoincrement=True)
@@ -95,7 +103,7 @@ class Activities(Base):
       back_populates="activities"
    )   
 
-class ReadingLog(Base):
+class ReadingLog(Base, ReprMixin):
    __tablename__ = "Reading"
 
    id: Mapped[int] = mapped_column(Integer, primary_key=True, index= True, autoincrement=True)
@@ -110,7 +118,7 @@ class ReadingLog(Base):
       back_populates="readinglogs"
    )
 
-class Todo(Base):
+class Todo(Base, ReprMixin):
    __tablename__ = "Todo"
 
    id: Mapped[int] = mapped_column(Integer, primary_key=True, index= True, autoincrement=True) 
@@ -119,7 +127,7 @@ class Todo(Base):
    status_id: Mapped[int] = mapped_column(ForeignKey("Status.id"), nullable= False)
    date_created: Mapped[date]
 
-class Status(Base):
+class Status(Base, ReprMixin):
    __tablename__ = "Status"
 
    id: Mapped[int] = mapped_column(Integer, primary_key=True, index= True, autoincrement=True) 
