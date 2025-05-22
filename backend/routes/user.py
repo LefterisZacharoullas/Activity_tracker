@@ -55,9 +55,9 @@ async def update_user_name(
     if name_db:
         raise HTTPException(400, "User with this name already exist")
 
-    if not name.isalpha():
-        raise HTTPException(422, "Name must contain only letters")
-    
+    if not name.isalnum():
+        raise HTTPException(status_code=422, detail="Name must contain only letters and digits")
+
     current_user.name = name
     db.commit()
     db.refresh(current_user)

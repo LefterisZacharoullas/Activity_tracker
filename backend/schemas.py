@@ -27,7 +27,7 @@ class UserOut(UserCreate):
     model_config = ConfigDict(from_attributes=True)
 
 class BookCreate(BaseModel):
-    book_name: str
+    book_name: str = Field(min_length=1, max_length=128,)
     last_page: int
 
 class BooksOut(BookCreate):
@@ -35,8 +35,13 @@ class BooksOut(BookCreate):
     model_config = ConfigDict(from_attributes=True)
 
 class AuthorCreate(BaseModel):
-    author_name: str
-    author_surname: str | None = None
+    author_name: str = Field(min_length=1, max_length=128, pattern=r'^[a-zA-Z]*$')
+    author_surname: str | None = Field(
+        default= None, 
+        min_length=1, 
+        max_length=128, 
+        pattern=r'^[a-zA-Z]*$'
+    )
 
 class AuthorOut(AuthorCreate):
     id: int

@@ -28,12 +28,11 @@ def test_change_user_name_duplicate(authorized_client, test_user2):
     assert res.status_code == 400
     assert res.json()["detail"] == "User with this name already exist"
 
-@pytest.mark.parametrize("invalid_name", ["John123", "Name!", "123", "Name_"])
+@pytest.mark.parametrize("invalid_name", ["Name!", "/./12", "Name_"])
 def test_change_user_name_invalid_chars(authorized_client, invalid_name):
     res = authorized_client.patch(f"/user/user_name?name={invalid_name}")
     assert res.status_code == 422
-    assert res.json()["detail"] == "Name must contain only letters"
-
+    assert res.json()["detail"] == "Name must contain only letters and digits"
 
 def test_update_password(authorized_client):
     res = authorized_client.patch("/user/update_password?password=newsecurepass123")

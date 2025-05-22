@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 import pytest
-from sqlalchemy import create_engine, StaticPool
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, StaticPool, select
+from sqlalchemy.orm import sessionmaker, Session
 from backend.main import app
 from backend.database import Base, get_db
 from backend.security import create_access_token
@@ -112,3 +112,38 @@ def test_activities(test_user, session) -> list[models.Activities]:
 
     activities = session.query(models.Activities).all()
     return activities
+
+@pytest.fixture
+def test_books(session: Session) -> list[models.Books]:
+    books_data = [
+        {"book_name": "Foundation", "last_page": 255},
+        {"book_name": "Murder on the Orient Express", "last_page": 312}
+    ]
+    session.add_all([models.Books(**book) for book in books_data])
+    session.commit()
+    return session.scalars(select(models.Books)).all()
+
+@pytest.fixture
+def test_authors(session: Session) -> list[models.Author]:
+    author_data = [
+        {"author_name": "Lefteris", "author_surname": "Zacharoullas"},
+        {"author_name": "authoruser", "author_surname": "autrhossurname"}
+    ]
+    session.add_all([models.Author(**author) for author in author_data])
+    session.commit()
+    return session.scalars(select(models.Author)).all()
+
+@pytest.fixture
+def test_status(session: Session) -> list[int]:
+    status_data = [
+        {"status": "Not Started"},
+        {"status": "In Progress"},
+        {"status": "Completed"}
+    ]
+
+    status_list = [models.Status(**data) for data in status_data]
+
+    session.add_all(status_list)
+    session.commit()
+
+    return [status.id for status in status_list]
