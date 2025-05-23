@@ -73,11 +73,19 @@ class ReadingCreate(BaseModel):
     pages_read: int | None
     date: date
 
-class ReadingOut(BaseModel):
+class ReadingOut(ReadingCreate):
     id: int
     user_id: int
     book_id: int
-    pages_read: int | None
     status_id: int
-    date: date
+    model_config = ConfigDict(from_attributes=True)
+
+class TodoCreate(BaseModel):
+    text: str
+    date_created: date
+
+class TodoOut(TodoCreate):
+    id: int
+    user_id: int
+    status_id: int
     model_config = ConfigDict(from_attributes=True)

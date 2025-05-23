@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from ..database import get_db
-from ..models import Users, Activities, Books, ReadingLog, Status
+from ..models import Users, Activities, Books, ReadingLog, Status, Todo
 from ..security import get_current_user, get_password_hash
 
 router = APIRouter(
@@ -93,6 +93,18 @@ async def put_users_activities(
     db: Session = Depends(get_db)
 ):
     """➕ Add a new activity to the current user's activities."""
+    test_activity = Activities(**activity.model_dump(), user_id= current_user.id)
+
+    data = {
+        key: value for key, value in test_activity.__dict__.items()
+        if not key.startswith("_")
+    }
+
+    existing_activity = db.scalar(select(Activities).filter_by(**data))
+    
+    if existing_activity:
+        raise HTTPException(400, "This Task already in user's collection")
+
     db_activity = Activities(**activity.model_dump(), user_id=current_user.id)
     db.add(db_activity)
     db.commit()
@@ -207,5 +219,81 @@ async def users_reading(
         raise HTTPException(404, "Reading that user provide doesn't exist in user's collection")
     
     db.delete(reading)
+    db.commit()
+    return {"status" : "Successfully deleted"}
+
+# ─────────────────────────────────────────────────────────────
+# 📝 Todo ENDPOINTS
+# ─────────────────────────────────────────────────────────────
+
+@router.get("/todo", response_model= list[schemas.TodoOut])
+async def get_user_todo(current_user: Users = Depends(get_current_user)):
+    """Return all users todo tasks"""
+    return current_user.todo_tasks
+
+@router.get("/todo/{status_id}", response_model= list[schemas.TodoOut])
+async def get_todo_by_status(
+    status: Status = Depends(dependencies.verify_status_id),
+    current_user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Return users todo tasks by status_id"""
+    tasks_by_status = db.scalars(
+        select(Todo).where(
+            current_user.id == Todo.user_id,
+            status.id == Todo.status_id,
+        )
+    ).all()
+    return tasks_by_status
+
+@router.post("/todo/{status_id}", response_model=schemas.TodoOut)
+async def create_user_todo(
+    todo: schemas.TodoCreate,
+    status: Status = Depends(dependencies.verify_status_id),
+    current_user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Create todo task with status id"""
+    test_task = Todo(
+        **todo.model_dump(), 
+        user_id= current_user.id,
+        status_id= status.id
+    )
+
+    test_task = {
+        key: val for key, val in test_task.__dict__.items()
+        if not key.startswith("_")
+    }
+
+    existing_task = db.scalar(
+        select(Todo).filter_by(**test_task)
+    )
+
+    if existing_task:
+        raise HTTPException(400, "This Task already in user's collection")
+    
+    todo_db = Todo(
+        **todo.model_dump(),
+        user_id = current_user.id,
+        status_id = status.id
+    )
+
+    db.add(todo_db)
+    db.commit()
+    db.refresh(todo_db)
+    return todo_db
+
+@router.delete("/todo/{todo_id}")
+async def delete_user_todo(
+    todo: Todo = Depends(dependencies.verify_todo_id),  
+    current_user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Deleting the todo task from the user"""
+
+    if not todo in current_user.todo_tasks:
+        raise HTTPException(404, "This todo not Found")
+    
+    db.delete(todo)
     db.commit()
     return {"status" : "Successfully deleted"}

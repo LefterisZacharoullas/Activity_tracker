@@ -32,3 +32,9 @@ def verify_reading_id(reading_id: int = Path(), db: Session = Depends(get_db)) -
     if not reading_id:
         raise HTTPException(404, "The provided reading doesn't exist")
     return reading
+
+def verify_todo_id(todo_id: int = Path(), db: Session = Depends(get_db)) -> models.Todo:
+    todo = db.get(models.Todo, todo_id)
+    if not todo:
+        raise HTTPException(404, "This todo tasks not Found")
+    return todo

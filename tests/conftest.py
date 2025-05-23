@@ -147,3 +147,15 @@ def test_status(session: Session) -> list[int]:
     session.commit()
 
     return [status.id for status in status_list]
+
+@pytest.fixture
+def test_todos(session: Session, test_user, test_status) -> list[models.Todo]:
+    print(test_user)
+    todo_data = [
+        {"text": "Buy milk", "status_id": test_status[0], "user_id": test_user["id"], "date_created" : date(2025, 5, 19)},
+        {"text": "Read a book", "status_id": test_status[1], "user_id": test_user["id"], "date_created" : date(2025, 5, 20)},
+        {"text": "Go to the gym", "status_id": test_status[2], "user_id": test_user["id"], "date_created" : date(2025, 5, 29)},
+    ]
+    session.add_all([models.Todo(**data) for data in todo_data])
+    session.commit()
+    return session.scalars(select(models.Todo)).all()

@@ -53,6 +53,10 @@ class Users(Base, ReprMixin):
       back_populates="user"
    )
 
+   todo_tasks: Mapped[list["Todo"]] = relationship(
+      back_populates="user"
+   )
+
 
 class Books(Base, ReprMixin):
    __tablename__ = "Books"
@@ -126,6 +130,10 @@ class Todo(Base, ReprMixin):
    text: Mapped[str]
    status_id: Mapped[int] = mapped_column(ForeignKey("Status.id"), nullable= False)
    date_created: Mapped[date]
+
+   user: Mapped["Users"] = relationship(
+      back_populates= "todo_tasks"
+   )
 
 class Status(Base, ReprMixin):
    __tablename__ = "Status"
