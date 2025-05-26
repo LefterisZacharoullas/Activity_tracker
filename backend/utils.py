@@ -5,6 +5,14 @@ from backend import schemas
 from datetime import datetime
 from itertools import groupby
 from typeguard import typechecked
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+limiter = Limiter(
+    key_func= get_remote_address,
+    strategy="fixed-window",
+    storage_uri="memory://",
+)
 
 def month_stats_activities(
     range_activities: dict[Any | None, list[date | None]],

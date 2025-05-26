@@ -1,13 +1,14 @@
 from backend import dependencies
 from backend import schemas 
 from backend import utils
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from ..database import get_db
 from ..models import Users, Activities, Books, ReadingLog, Status, Todo
 from ..security import get_current_user, get_password_hash
 from typing import Literal
+from backend.utils import limiter
 
 router = APIRouter(
     prefix="/user",
@@ -19,12 +20,15 @@ router = APIRouter(
 # ─────────────────────────────────────────────────────────────
 
 @router.get("/user_info", response_model=schemas.UserOut)
-async def get_users_info(current_user: Users = Depends(get_current_user)):
+@limiter.limit("20/minute")
+async def get_users_info(request: Request, current_user: Users = Depends(get_current_user)):
     """🔍 Get current user's public information."""
     return current_user
 
 @router.patch("/user_info", response_model=schemas.UserOut, response_model_exclude_none=True)
+@limiter.limit("10/minute")
 async def upgrade_user_info(
+    request: Request,
     user_update: schemas.UserUpdate,
     current_user: Users = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -41,7 +45,9 @@ async def upgrade_user_info(
     return current_user
 
 @router.patch("/user_name")
+@limiter.limit("10/minute")
 async def update_user_name(
+    request: Request,
     name: str,
     current_user: Users = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -66,7 +72,9 @@ async def update_user_name(
     return current_user
 
 @router.patch("/update_password")
+@limiter.limit("10/minute")
 async def update_password(
+    request: Request,
     password: str,
     current_user: Users = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -84,12 +92,15 @@ async def update_password(
 # ─────────────────────────────────────────────────────────────
     
 @router.get("/activities", response_model=list[schemas.ActivitiesOut])
-async def get_users_activities(current_user: Users = Depends(get_current_user)):
+@limiter.limit("25/minute")
+async def get_users_activities(request: Request, current_user: Users = Depends(get_current_user)):
     """📋 Get all activities associated with the current user."""
     return current_user.activities
 
 @router.post("/activities", response_model=schemas.ActivitiesOut)
+@limiter.limit("10/minute")
 async def put_users_activities(
+    request: Request,
     activity: schemas.ActivityCreate, 
     current_user: Users = Depends(get_current_user), 
     db: Session = Depends(get_db)
@@ -114,7 +125,9 @@ async def put_users_activities(
     return db_activity
 
 @router.delete("/activities/{activity_id}")
+@limiter.limit("10/minute")
 async def put_users_activities(
+    request: Request,
     db_activity: Activities = Depends(dependencies.verify_activity_id), 
     current_user: Users = Depends(get_current_user), 
     db: Session = Depends(get_db)
@@ -131,12 +144,15 @@ async def put_users_activities(
 # ─────────────────────────────────────────────────────────────
 
 @router.get("/books", response_model=list[schemas.BooksOut])
-async def get_users_activities(current_user: Users = Depends(get_current_user)):
+@limiter.limit("25/minute")
+async def get_users_activities(request: Request, current_user: Users = Depends(get_current_user)):
     """📚 Get all books saved by the current user."""
     return current_user.books
 
 @router.post("/book/{book_id}", response_model=schemas.BooksOut)
+@limiter.limit("10/minute")
 async def set_users_book(
+    request: Request,
     book: Books = Depends(dependencies.verify_book_id),
     current_user: Users = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -154,7 +170,9 @@ async def set_users_book(
     return book
 
 @router.delete("/book/{book_id}")
+@limiter.limit("10/minute")
 async def delete_user_book(
+    request: Request,
     book: Books = Depends(dependencies.verify_book_id),
     current_user: Users = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -175,14 +193,18 @@ async def delete_user_book(
 # ─────────────────────────────────────────────────────────────
 
 @router.get("/reading", response_model= list[schemas.ReadingOut])
+@limiter.limit("25/minute")
 async def users_reading(
+    request: Request,
     current_user: Users = Depends(get_current_user),
 ):
     """📖 Return the user's reading history (logs)."""
     return current_user.readinglogs
 
 @router.post("/reading/{book_id}/status/{status_id}", response_model= schemas.ReadingOut)
+@limiter.limit("10/minute")
 async def set_reading_book(
+    request: Request,
     reading: schemas.ReadingCreate,
     book: Books = Depends(dependencies.verify_book_id),
     status: Status = Depends(dependencies.verify_status_id),
@@ -208,7 +230,9 @@ async def set_reading_book(
     return reading_db
 
 @router.delete("/reading/{reading_id}")
+@limiter.limit("10/minute")
 async def users_reading(
+    request: Request,
     reading: ReadingLog = Depends(dependencies.verify_reading_id),
     current_user: Users = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -229,12 +253,15 @@ async def users_reading(
 # ─────────────────────────────────────────────────────────────
 
 @router.get("/todo", response_model= list[schemas.TodoOut])
-async def get_user_todo(current_user: Users = Depends(get_current_user)):
+@limiter.limit("25/minute")
+async def get_user_todo(request: Request, current_user: Users = Depends(get_current_user)):
     """Return all users todo tasks"""
     return current_user.todo_tasks
 
 @router.get("/todo/{status_id}", response_model= list[schemas.TodoOut])
+@limiter.limit("25/minute")
 async def get_todo_by_status(
+    request: Request,
     status: Status = Depends(dependencies.verify_status_id),
     current_user: Users = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -249,7 +276,9 @@ async def get_todo_by_status(
     return tasks_by_status
 
 @router.post("/todo/{status_id}", response_model=schemas.TodoOut)
+@limiter.limit("10/minute")
 async def create_user_todo(
+    request: Request,
     todo: schemas.TodoCreate,
     status: Status = Depends(dependencies.verify_status_id),
     current_user: Users = Depends(get_current_user),
@@ -286,7 +315,9 @@ async def create_user_todo(
     return todo_db
 
 @router.delete("/todo/{todo_id}")
+@limiter.limit("10/minute")
 async def delete_user_todo(
+    request: Request,
     todo: Todo = Depends(dependencies.verify_todo_id),  
     current_user: Users = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -305,7 +336,9 @@ async def delete_user_todo(
 # ─────────────────────────────────────────────────────────────
 
 @router.get("/user/stats", response_model= schemas.Stats)
+@limiter.limit("25/minute")
 async def get_users_stats(
+    request: Request,
     range_conf: Literal["week" , "month"] = "week",
     current_user: Users = Depends(get_current_user),
 ):

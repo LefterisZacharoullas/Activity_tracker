@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
@@ -6,7 +6,7 @@ from ..database import get_db
 from ..models import Users
 from ..schemas import User_secret, Token, UserOut
 from ..security import get_password_hash, authenticate_user, create_access_token
-
+from backend.utils import limiter
 
 router = APIRouter(
     prefix="/auth",
@@ -14,7 +14,8 @@ router = APIRouter(
 )
 
 @router.post("/token", response_model=Token)
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def login_for_access_token(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -27,7 +28,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
 
 
 @router.post("/signup", response_model= UserOut)
-async def create_user(user: User_secret, db: Session = Depends(get_db)):
+async def create_user(request: Request, user: User_secret, db: Session = Depends(get_db)):
     stmt = select(Users).where(Users.name == user.name)
     username = db.scalars(stmt).one_or_none()
     if username:
