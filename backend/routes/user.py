@@ -1,11 +1,13 @@
 from backend import dependencies
 from backend import schemas 
+from backend import utils
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from ..database import get_db
 from ..models import Users, Activities, Books, ReadingLog, Status, Todo
 from ..security import get_current_user, get_password_hash
+from typing import Literal
 
 router = APIRouter(
     prefix="/user",
@@ -297,3 +299,23 @@ async def delete_user_todo(
     db.delete(todo)
     db.commit()
     return {"status" : "Successfully deleted"}
+
+# ─────────────────────────────────────────────────────────────
+# 📝 Stats ENDPOINTS
+# ─────────────────────────────────────────────────────────────
+
+@router.get("/user/stats", response_model= schemas.Stats)
+async def get_users_stats(
+    range_conf: Literal["week" , "month"] = "week",
+    current_user: Users = Depends(get_current_user),
+):
+    activities = current_user.activities
+    readinglogs = current_user.readinglogs
+
+    activities_dates = utils.configure_dates_for_processing(activities, range_conf)
+    activities_stats = utils.month_stats_activities(activities_dates, activities, range_conf)
+
+    read_dates = utils.configure_dates_for_processing(readinglogs, range_conf)
+    read_stats = utils.month_stats_readings(read_dates, readinglogs, range_conf)
+
+    return schemas.Stats(activities=activities_stats , readings=read_stats)
