@@ -1,0 +1,67 @@
+import * as React from 'react';
+
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
+
+import colors from "@/assets/colors";
+
+//screens
+import ActivityScreen from "@/navigation/screens/ActivityScreen";
+import BooksScreen from "@/navigation/screens/BooksScreen";
+import HomeScreen from "@/navigation/screens/HomeScreen";
+
+// screen names
+const screens_names = {
+    Home: "Home",
+    Activity: "Activitys",
+    Books: "Books",
+};
+
+const Tab = createBottomTabNavigator();
+
+export default function MainContainer() {
+  return (
+      <Tab.Navigator
+        initialRouteName={screens_names.Home}
+        screenOptions={({ route }) => ({
+          tabBarIcon: ({ focused, color, size }) => {
+            let iconName;
+
+            if (route.name === screens_names.Home) {
+              iconName = focused ? 'home' : 'home-outline';
+            } else if (route.name === screens_names.Activity) {
+              iconName = focused ? 'pulse' : 'pulse-outline';
+            } else if (route.name === screens_names.Books) {
+              iconName = focused ? 'book' : 'book-outline';
+            }
+
+            return <Ionicons name={iconName} size={size} color={color} />;
+          },
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.text,
+        })}  
+      >
+        <Tab.Screen 
+        name={screens_names.Home} 
+        component={HomeScreen}
+        options= {header_options}
+        />
+        <Tab.Screen 
+        name={screens_names.Activity} 
+        component={ActivityScreen}
+        options={header_options}
+        />
+        <Tab.Screen 
+        name={screens_names.Books}
+        component={BooksScreen}
+        options={header_options}
+        />
+      </Tab.Navigator>
+  );
+}
+
+const header_options = {
+    headerTitleAlign: 'center',
+    headerStyle: { backgroundColor: colors.primary },
+    headerTintColor: colors.background,
+};
