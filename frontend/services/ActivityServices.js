@@ -94,3 +94,5 @@ const ActivityServices = {
         }
     }
 }
+
+export default ActivityServices;

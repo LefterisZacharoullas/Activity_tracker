@@ -10,6 +10,7 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const checkAuthentication = async () => {
             const authStatus = await AuthServices.isAuthenticated();
+            console.log("Authentication status:", authStatus);
             setIsAuthenticated(authStatus);
             setLoading(false);
         };

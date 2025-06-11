@@ -18,10 +18,10 @@ const AuthServices = {
             const { access_token } = res.data;
             console.log("User logged in successfully:", res.data);
             await AsyncStorage.setItem('token', access_token);
-            return { token: access_token };
+            return { success: true, token: access_token };
 
         } catch (error) {
-            return { error: error.message };
+            return { success: false, error: error.message };
         }
     },
 

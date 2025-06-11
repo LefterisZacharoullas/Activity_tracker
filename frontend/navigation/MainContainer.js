@@ -1,5 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, TouchableOpacity } from 'react-native';
+import HeaderLogout from "@/utilities/HeaderLogout";
 
 import colors from "@/assets/colors";
 
@@ -46,22 +48,34 @@ export default function MainContainer() {
       <Tab.Screen
         name={screens_names.Home}
         component={HomeScreen}
-        options={header_options}
+        options={{
+          ...header_options,
+          headerRight: () => <HeaderLogout />,
+        }}
       />
       <Tab.Screen
         name={screens_names.Activity}
         component={ActivityScreen}
-        options={header_options}
+        options={{
+          ...header_options,
+          headerRight: () => <HeaderLogout />,
+        }}
       />
       <Tab.Screen
         name={screens_names.Books}
         component={BooksScreen}
-        options={header_options}
+        options={{
+          ...header_options,
+          headerRight: () => <HeaderLogout />,
+        }}
       />
       <Tab.Screen
         name={screens_names.Stats}
         component={StatsScreen}
-        options={header_options}
+        options={{
+          ...header_options,
+          headerRight: () => <HeaderLogout />,
+        }}
       />
     </Tab.Navigator>
   );
