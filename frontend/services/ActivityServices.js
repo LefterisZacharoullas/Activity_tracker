@@ -6,18 +6,10 @@ const ActivityServices = {
     async getActivities() {
         try {
             const res = await api.get(`${config.apiUrl}/user/activities`);
-
-            if ( res.status === 200) {
-                console.log("Activities fetched successfully:", res.data);
-                return res.data;
-            }
-
-            console.warn("Unexpected success status:", res.status);
-            return { error: `Unexpected status: ${res.status}` };
-            
+            return { data: res.data, status: res.status };
         } catch (error) {
             console.error("Error fetching activities:", error);
-            return { error: error.message };
+            return { error: error.message, status: error.response?.status };
         }
     },
     // Post request to create a new activity
@@ -26,15 +18,7 @@ const ActivityServices = {
     async postActivity(activityData) {
         try {
             const res = await api.post(`${config.apiUrl}/user/activities`, activityData);
-
-            if (res.status === 200) {
-                console.log("Activity created successfully:", res.data);
-                return res.data;
-            }
-
-            console.warn("Unexpected success status:", res.status);
-            return { error: `Unexpected status: ${res.status}` };
-
+            return { data: res.data, status: res.status };
         } catch (error) {
             if (error.response) {
                 const status = error.response.status;
@@ -62,15 +46,7 @@ const ActivityServices = {
     async deleteActivity(activityId) {
         try {
             const res = await api.delete(`${config.apiUrl}/user/activities/${activityId}`);
-
-            if (res.status === 200) {
-                console.log("Activity deleted successfully:", res.data);
-                return res.data;
-            }
-
-            console.warn("Unexpected success status:", res.status);
-            return { error: `Unexpected status: ${res.status}` };
-
+            return { data: res.data, status: res.status };
         } catch (error) {
             if (error.response) {
                 const status = error.response.status;

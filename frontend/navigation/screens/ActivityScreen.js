@@ -1,9 +1,11 @@
-import { View, Text, StyleSheet, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import ActivityServices from "../../services/ActivityServices";
 import { useEffect, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 import colors from "@/assets/colors";
 import ActivityList from '@/utilities/ActivityList';
+import { useAuth } from '@/context/AuthContext';
+import AddActivityModal from '@/utilities/AddActivityModal';
 
 export default function ActivityScreen() {
 
@@ -13,32 +15,41 @@ export default function ActivityScreen() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activityData, setActivityData] = useState([
-    {
-      id: 1,
-      exercise_name: "Test Lift",
-      exercise_reps: 10,
-      exercise_weight: 50,
-      date: "2025-06-06",
-      user_id: 1
-    }
-  ]);
+  const [activityData, setActivityData] = useState([]);
+  const { logout } = useAuth();
+  
+  const [modalVisible, setModalVisible] = useState(false);
+  const [newActivity, setNewActivity] = useState({
+    exercise_name: '',
+    exercise_reps: '',
+    exercise_weight: '',
+  });
 
   useEffect(() => {
     const fetchActivityData = async () => {
-      try {
-        const res = await ActivityServices.getActivities();
-        console.log("API response:", res);
-        setActivityData(res);
+      setLoading(true);
+      const res = await ActivityServices.getActivities();
+      if (res.status >= 200 && res.status < 300) {
+        console.log("API response:", res.data);
+        setActivityData(res.data);
         setLoading(false);
-      } catch (error) {
-        console.error("Error fetching activity data:", error);
-        setError(error);
+      } else if (res.status === 401) {
+        console.error("Unauthorized access - please log in.");
+        setError("Unauthorized access - please log in.");
+        logout();
+        return;
+      } else {
+        console.error("Error fetching activity data:", res.error);
+        setError(res.error);
         setLoading(false);
       }
     };
     fetchActivityData();
   }, []);
+
+  const onAddActivity = async () => {
+    console.log("Adding new activity:", newActivity);
+  }
 
   if (loading) {
     return (
@@ -58,28 +69,71 @@ export default function ActivityScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Activity Screen</Text>
-      <Text style={styles.subtitle}>Track your activities here!</Text>
-      <ActivityList activitydata={activityData} />
+      <View style={styles.header}>
+        <Text style={styles.title}>Activity Screen</Text>
+        <Text style={styles.subtitle}>Track your activities here!</Text>
+      </View>
+
+      <View style={{ flex: 1 }}>
+        <ActivityList activitydata={activityData} />
+      </View>
+
+      <TouchableOpacity style={styles.activityButton} onPress={() => setModalVisible(true)}>
+        <Text style={styles.activityButtonText}>Add Activity</Text>
+      </TouchableOpacity>
+
+      {/* Modal for adding new activity */}
+      <AddActivityModal
+        modalVisible={modalVisible}
+        setModalVisible={setModalVisible}
+        newActivity={newActivity}
+        setNewActivity={setNewActivity}
+        onAddActivity={onAddActivity}
+      />
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 50,
+  },
+  header: {
+    marginBottom: 20,
+    alignItems: 'center',
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 10,
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.primary,
   },
   subtitle: {
+    fontSize: 16,
+    color: colors.muted,
+    marginTop: 4,
+  },
+  activityButton: {
+    position: 'absolute',
+    bottom: 25,
+    alignSelf: 'center',
+    backgroundColor: colors.primary,
+    paddingVertical: 15,
+    paddingHorizontal: 34,
+    borderRadius: 12,
+    alignItems: 'center',
+    elevation: 3, // Android shadow
+    shadowColor: '#000', // iOS shadow
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+  },
+  activityButtonText: {
+    color: colors.background,
     fontSize: 18,
-    color: colors.text,
+    fontWeight: '600',
   },
   errorText: {
     color: 'red',
