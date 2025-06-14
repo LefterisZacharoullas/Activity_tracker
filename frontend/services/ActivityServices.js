@@ -50,25 +50,16 @@ const ActivityServices = {
             const res = await api.delete(`${config.apiUrl}/user/activities/${activityId}`);
             return { data: res.data, status: res.status };
         } catch (error) {
-            if (error.response) {
-                const status = error.response.status;
-
-                if (status === 404) {
-                    console.error("Activity not found:", error.response.data);
-                    return { error: error.response.data };
-                }
-
-                if (status === 401) {
-                    console.error("Not authenticated", error.response.data);
-                    return { error: error.response.data };
-                }
-
-                console.error(`Request failed with status ${status}:`, error.response.data);
-                return { error: error.response.data };
-            }
-
-            console.error("Network or unexpected error:", error.message);
-            return { error: error.message };
+            console.error("Error deleting activity:", error);
+            const status = error.response?.status;
+            const detail = error.response?.data?.detail;
+            const msg = detail?.[0]?.msg;
+            const input = detail?.[0]?.input;
+            return {
+                error: msg || error.message,
+                invalidInput: input,
+                status,
+            };
         }
     }
 }

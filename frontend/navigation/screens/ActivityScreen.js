@@ -49,7 +49,6 @@ export default function ActivityScreen() {
   }, []);
 
   const onAddActivity = async () => {
-
     const res = await ActivityServices.postActivity(newActivity);
     if (res.status >= 200 && res.status < 300) {
       console.log("Activity added successfully:", res.data);
@@ -76,6 +75,21 @@ export default function ActivityScreen() {
 
   }
 
+  const onDeleteActivity = async (id) => {
+    const res = await ActivityServices.deleteActivity(id)
+    if (res.status >= 200 && res.status < 300){
+      console.log("Activity deleted successfully:", res.data)
+      setActivityData(prevData => prevData.filter(item => item.id !== id));
+    } else {
+      console.error("Error deleting activity:", res.error)
+      Alert.alert("Error deleting activity: " + res.error)
+    }
+  }
+
+  const onConfigActivity = async (id) => {
+    // Future implementation
+  }
+
   if (loading) {
     return (
       <View style={styles.container}>
@@ -100,7 +114,10 @@ export default function ActivityScreen() {
       </View>
 
       <View style={{ flex: 1 }}>
-        <ActivityList activitydata={activityData} />
+        <ActivityList 
+          activitydata={activityData} 
+          onDeleteActivity={onDeleteActivity}  
+          onConfigActivity={onConfigActivity} />
       </View>
 
       <TouchableOpacity style={styles.activityButton} onPress={() => setModalVisible(true)}>
