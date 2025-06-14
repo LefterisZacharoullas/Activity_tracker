@@ -41,6 +41,12 @@ const AddActivityModal = ({ modalVisible, setModalVisible, newActivity, setNewAc
 
             <TouchableOpacity style={styles.addButton} onPress={() => {
                 onAddActivity(newActivity);
+                setNewActivity({
+                  exercise_name: '',
+                  exercise_reps: '',
+                  exercise_weight: '',
+                  date: new Date().toISOString().split('T')[0], // Reset date to today
+                });
                 setModalVisible(false);
             }}>
               <Text style={styles.buttonText}>Add Activity</Text>

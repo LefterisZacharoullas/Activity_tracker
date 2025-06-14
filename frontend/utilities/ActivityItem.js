@@ -4,7 +4,6 @@ import colors from '../assets/colors';
 const ActivityItem = ({ item }) => {
     return (
         <View style={styles.card}>
-            {console.log("Activity Item:", item)}
             <Text style={styles.exerciseName}>{item.exercise_name}</Text>
             <Text style={styles.itemText}>Reps: {item.exercise_reps}</Text>
             <Text style={styles.itemText}>Weight: {item.exercise_weight}kg</Text>

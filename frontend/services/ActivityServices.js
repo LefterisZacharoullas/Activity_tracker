@@ -9,7 +9,15 @@ const ActivityServices = {
             return { data: res.data, status: res.status };
         } catch (error) {
             console.error("Error fetching activities:", error);
-            return { error: error.message, status: error.response?.status };
+            const status = error.response?.status;
+            const detail = error.response?.data?.detail;
+            const msg = detail?.[0]?.msg;
+            const input = detail?.[0]?.input;
+            return {
+                error: msg || error.message,
+                invalidInput: input,
+                status,
+            };
         }
     },
     // Post request to create a new activity
@@ -20,25 +28,19 @@ const ActivityServices = {
             const res = await api.post(`${config.apiUrl}/user/activities`, activityData);
             return { data: res.data, status: res.status };
         } catch (error) {
-            if (error.response) {
-                const status = error.response.status;
+            console.error("Error creating activity:", error);
+            const status = error.response?.status;
+            const detail = error.response?.data?.detail;
 
-                if (status === 422) {
-                    console.error("Validation error:", error.response.data);
-                    return { error: error.response.data };
-                }
+            // Optional: extract specific error messages (e.g., for validation)
+            const msg = detail?.[0]?.msg;
+            const input = detail?.[0]?.input;
 
-                if (status === 401) {
-                    console.error("Not authenticated", error.response.data);
-                    return { error: error.response.data };
-                }
-
-                console.error(`Request failed with status ${status}:`, error.response.data);
-                return { error: error.response.data };
-            }
-
-            console.error("Network or unexpected error:", error.message);
-            return { error: error.message };
+            return {
+                error: msg || error.message,
+                invalidInput: input,
+                status,
+            };
         }
     },
 

@@ -41,7 +41,7 @@ const AuthServices = {
     async isAuthenticated() {
         try {
             const token = await AsyncStorage.getItem('token');
-            return !!token; // Returns true if token exists, false otherwise
+            return token ? true : false; // Returns true if token exists, false otherwise
         } catch (error) {
             console.error("Error checking authentication status:", error);
             return false;

@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import ActivityServices from "../../services/ActivityServices";
 import { useEffect, useState } from 'react';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Alert } from 'react-native';
 import colors from "@/assets/colors";
 import ActivityList from '@/utilities/ActivityList';
 import { useAuth } from '@/context/AuthContext';
@@ -17,12 +17,13 @@ export default function ActivityScreen() {
   const [error, setError] = useState(null);
   const [activityData, setActivityData] = useState([]);
   const { logout } = useAuth();
-  
+
   const [modalVisible, setModalVisible] = useState(false);
   const [newActivity, setNewActivity] = useState({
     exercise_name: '',
     exercise_reps: '',
     exercise_weight: '',
+    date: new Date().toISOString().split('T')[0], // Default to today's date
   });
 
   useEffect(() => {
@@ -48,7 +49,31 @@ export default function ActivityScreen() {
   }, []);
 
   const onAddActivity = async () => {
-    console.log("Adding new activity:", newActivity);
+
+    const res = await ActivityServices.postActivity(newActivity);
+    if (res.status >= 200 && res.status < 300) {
+      console.log("Activity added successfully:", res.data);
+      setActivityData(prevData => [...prevData, res.data]);
+    } else if (res.status === 401) {
+      console.error("Unauthorized access - please log in.");
+      setError("Unauthorized access - please log in.");
+      logout();
+      return;
+    } else if (res.status === 422) {
+      console.error("Validation error:", res.error);
+      const inputMsg = res.invalidInput !== undefined
+        ? `\nInvalid input: ${res.invalidInput}`
+        : '';
+      Alert.alert(
+        "Validation Error",
+        `${res.error}${inputMsg}\nPlease check your input and try again.`
+      );
+      return;
+    } else {
+      console.error("Error adding activity:", res.error);
+      Alert.alert(`Error adding activity: ${res.error}`);
+    }
+
   }
 
   if (loading) {
@@ -116,8 +141,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   activityButton: {
-    position: 'absolute',
-    bottom: 25,
+    position: 'sticky',
+    bottom: 15,
     alignSelf: 'center',
     backgroundColor: colors.primary,
     paddingVertical: 15,
