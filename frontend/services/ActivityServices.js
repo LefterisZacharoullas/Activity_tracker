@@ -1,6 +1,24 @@
 import api from './api';
 import config from './config';
 
+const ErrorResponse = (error) => {
+    console.error("Error:", error);
+
+    const status = error.response?.status;
+    const detail = error.response?.data?.detail;
+
+    const isArray = Array.isArray(detail);
+    const msg = isArray ? detail[0]?.msg : detail;
+    const ctx = isArray ? detail[0]?.ctx?.error : null;
+    const input = isArray ? detail[0]?.input : null;
+
+    return {
+        error: msg || error.message,
+        invalidInput: ctx || input || null,
+        status,
+    };
+};
+
 const ActivityServices = {
     // Get request for activities
     async getActivities() {
@@ -9,15 +27,7 @@ const ActivityServices = {
             return { data: res.data, status: res.status };
         } catch (error) {
             console.error("Error fetching activities:", error);
-            const status = error.response?.status;
-            const detail = error.response?.data?.detail;
-            const msg = detail?.[0]?.msg;
-            const input = detail?.[0]?.input;
-            return {
-                error: msg || error.message,
-                invalidInput: input,
-                status,
-            };
+            return ErrorResponse(error);
         }
     },
     // Post request to create a new activity
@@ -29,18 +39,7 @@ const ActivityServices = {
             return { data: res.data, status: res.status };
         } catch (error) {
             console.error("Error creating activity:", error);
-            const status = error.response?.status;
-            const detail = error.response?.data?.detail;
-
-            // Optional: extract specific error messages (e.g., for validation)
-            const msg = detail?.[0]?.msg;
-            const input = detail?.[0]?.input;
-
-            return {
-                error: msg || error.message,
-                invalidInput: input,
-                status,
-            };
+            return ErrorResponse(error);
         }
     },
 
@@ -51,15 +50,7 @@ const ActivityServices = {
             return { data: res.data, status: res.status };
         } catch (error) {
             console.error("Error deleting activity:", error);
-            const status = error.response?.status;
-            const detail = error.response?.data?.detail;
-            const msg = detail?.[0]?.msg;
-            const input = detail?.[0]?.input;
-            return {
-                error: msg || error.message,
-                invalidInput: input,
-                status,
-            };
+            return ErrorResponse(error);
         }
     }
 }

@@ -2,9 +2,10 @@ import { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import colors from "@/assets/colors"
 
-const ActivityItem = ({ item, onDeleteActivity, onConfigActivity }) => {
+const ActivityItem = ({ item, onDeleteActivity, onConfigActivity, onSelectActivity, selectedActivity }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const animation = useRef(new Animated.Value(0)).current;
+  const isSelected = selectedActivity.some(selected => selected.id === item.id);
 
   const toggleMenu = () => {
     setMenuVisible(prev => {
@@ -26,9 +27,9 @@ const ActivityItem = ({ item, onDeleteActivity, onConfigActivity }) => {
   });
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, isSelected && { backgroundColor: "lightgreen" }]}>
       <View style={styles.headerRow}>
-        <Text style={styles.exerciseName}>{item.exercise_name}</Text>
+        <Text style={styles.exerciseName} onPress={() => {onSelectActivity(item.id)}}>{item.exercise_name}</Text>
         <TouchableOpacity style={styles.moreBtn} onPress={toggleMenu}>
           <Text style={styles.moreText}>⋮</Text>
         </TouchableOpacity>

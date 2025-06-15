@@ -25,6 +25,7 @@ export default function ActivityScreen() {
     exercise_weight: '',
     date: new Date().toISOString().split('T')[0], // Default to today's date
   });
+  const [selectedActivity, setSelectedActivity] = useState([]);
 
   useEffect(() => {
     const fetchActivityData = async () => {
@@ -77,7 +78,7 @@ export default function ActivityScreen() {
 
   const onDeleteActivity = async (id) => {
     const res = await ActivityServices.deleteActivity(id)
-    if (res.status >= 200 && res.status < 300){
+    if (res.status >= 200 && res.status < 300) {
       console.log("Activity deleted successfully:", res.data)
       setActivityData(prevData => prevData.filter(item => item.id !== id));
     } else {
@@ -89,6 +90,24 @@ export default function ActivityScreen() {
   const onConfigActivity = async (id) => {
     // Future implementation
   }
+
+  const onSelectActivity = (id) => {
+    const activity = activityData.find(item => item.id === id);
+    
+    if (!activity) {
+      console.error("Activity not found with id:", id);
+      Alert.alert("Activity not found", "Please select a valid activity.");
+      return;
+    }
+
+    const isSelected = selectedActivity.some(item => item.id === id);
+
+    setSelectedActivity(prev =>
+      isSelected
+        ? prev.filter(item => item.id !== id) // remove
+        : [...prev, activity]                // add
+    );
+  };
 
   if (loading) {
     return (
@@ -114,10 +133,12 @@ export default function ActivityScreen() {
       </View>
 
       <View style={{ flex: 1 }}>
-        <ActivityList 
-          activitydata={activityData} 
-          onDeleteActivity={onDeleteActivity}  
-          onConfigActivity={onConfigActivity} />
+        <ActivityList
+          activitydata={activityData}
+          onDeleteActivity={onDeleteActivity}
+          onConfigActivity={onConfigActivity}
+          onSelectActivity={onSelectActivity}
+          selectedActivity={selectedActivity} />
       </View>
 
       <TouchableOpacity style={styles.activityButton} onPress={() => setModalVisible(true)}>
