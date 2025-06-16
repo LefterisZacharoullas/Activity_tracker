@@ -52,7 +52,18 @@ const ActivityServices = {
             console.error("Error deleting activity:", error);
             return ErrorResponse(error);
         }
-    }
+    },
+
+    // Put request to update an existing activity
+    async putActivity(activityId, activityData) {
+        try {
+            const res = await api.put(`${config.apiUrl}/user/activities/${activityId}`, activityData);
+            return { data: res.data, status: res.status };
+        } catch (error) {
+            console.error("Error updating activity:", error);
+            return ErrorResponse(error);
+        }
+    },
 }
 
 export default ActivityServices;

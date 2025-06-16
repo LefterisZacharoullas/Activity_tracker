@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import ActivityServices from "../../services/ActivityServices";
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert } from 'react-native';
@@ -39,6 +39,11 @@ export default function ActivityScreen() {
         console.error("Unauthorized access - please log in.");
         setError("Unauthorized access - please log in.");
         logout();
+        return;
+      } else if (res.status === 404) {
+        console.error("Resource not found:", res.error);
+        setError("Resource not found");
+        Alert.alert("Resource not found", "The requested resource could not be found.");
         return;
       } else {
         console.error("Error fetching activity data:", res.error);
@@ -87,13 +92,30 @@ export default function ActivityScreen() {
     }
   }
 
-  const onConfigActivity = async (id) => {
-    // Future implementation
+  const onConfigActivity = async (configData) => {
+    const res = await ActivityServices.putActivity(configData.id, configData);
+    if (res.status >= 200 && res.status < 300) {
+      console.log("Activity updated successfully:", res.data);
+      setActivityData(prevData => prevData.map(item => item.id === configData.id ? res.data : item));
+    } else if (res.status === 422) {
+      console.error("Validation error:", res.error);
+      const inputMsg = res.invalidInput !== undefined
+        ? `\nInvalid input: ${res.invalidInput}`
+        : '';
+      Alert.alert(
+        "Validation Error",
+        `${res.error}${inputMsg}\nPlease check your input and try again.`
+      );
+      return;
+    } else {
+      console.error("Error updating activity:", res.error);
+      Alert.alert(`Error updating activity: ${res.error}`);
+    }
   }
 
   const onSelectActivity = (id) => {
     const activity = activityData.find(item => item.id === id);
-    
+
     if (!activity) {
       console.error("Activity not found with id:", id);
       Alert.alert("Activity not found", "Please select a valid activity.");
@@ -120,7 +142,7 @@ export default function ActivityScreen() {
   if (error) {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>Error: {error?.message}</Text>
+        <Text style={styles.errorText}>Error: {error}</Text>
       </View>
     );
   }

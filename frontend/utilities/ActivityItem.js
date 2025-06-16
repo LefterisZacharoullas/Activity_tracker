@@ -1,11 +1,21 @@
 import { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Modal } from 'react-native';
 import colors from "@/assets/colors"
+import ConfigActivityModal from './ConfigActivityModal'; // Assuming this is the path to your ConfigActivityModal component
 
 const ActivityItem = ({ item, onDeleteActivity, onConfigActivity, onSelectActivity, selectedActivity }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const animation = useRef(new Animated.Value(0)).current;
   const isSelected = selectedActivity.some(selected => selected.id === item.id);
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [configActivity, setConfigActivity] = useState({
+    id: item.id,
+    exercise_name: item.exercise_name,
+    exercise_reps: item.exercise_reps,
+    exercise_weight: item.exercise_weight,
+    date: item.date,
+  });
 
   const toggleMenu = () => {
     setMenuVisible(prev => {
@@ -41,7 +51,7 @@ const ActivityItem = ({ item, onDeleteActivity, onConfigActivity, onSelectActivi
       <Animated.View style={[styles.dropdownMenu, { height: heightInterpolation, opacity: animation }]}>
         {menuVisible && (
           <>
-            <TouchableOpacity onPress={() => onConfigActivity(item.id)}>
+            <TouchableOpacity onPress={() => setModalVisible(true)}>
               <Text style={[styles.menuItem, { color: colors.muted }]}>⚙️ Config</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => onDeleteActivity(item.id)}>
@@ -50,6 +60,16 @@ const ActivityItem = ({ item, onDeleteActivity, onConfigActivity, onSelectActivi
           </>
         )}
       </Animated.View>
+
+      {/* Modal for configuring activity */}
+      <ConfigActivityModal
+        modalVisible={modalVisible}
+        setModalVisible={setModalVisible}
+        configActivity={configActivity}
+        setConfigActivity={setConfigActivity}
+        onConfigActivity={onConfigActivity}
+      />
+
     </View>
   );
 };

@@ -124,9 +124,30 @@ async def put_users_activities(
     db.refresh(db_activity)
     return db_activity
 
+@router.put("/activities/{activity_id}", response_model=schemas.ActivitiesOut)
+@limiter.limit("10/minute")
+async def update_users_activities(
+    request: Request,
+    activity_update: schemas.ActivityCreate,
+    db_activity: Activities = Depends(dependencies.verify_activity_id),
+    current_user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """✏️ Update an existing activity for the current user."""
+    if not db_activity in current_user.activities:
+        raise HTTPException(404, "The activity that provided doesn't exist in user's collection")
+    
+    for key, value in activity_update.model_dump().items():
+        if value is not None:
+            setattr(db_activity, key, value)
+
+    db.commit()
+    db.refresh(db_activity)
+    return db_activity
+
 @router.delete("/activities/{activity_id}")
 @limiter.limit("10/minute")
-async def put_users_activities(
+async def delete_users_activities(
     request: Request,
     db_activity: Activities = Depends(dependencies.verify_activity_id), 
     current_user: Users = Depends(get_current_user), 
@@ -134,7 +155,7 @@ async def put_users_activities(
 ):
     """❌ Delete an activity from the user's list by its ID."""
     if not db_activity in current_user.activities:
-        raise HTTPException(404 , "The activitie that provided doesnt'exist in users collection")
+        raise HTTPException(404 , "The activity that provided doesn't exist in user's collection")
     db.delete(db_activity)
     db.commit()
     return {"status" : "Successfully deleted"}
