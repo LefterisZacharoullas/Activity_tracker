@@ -1,6 +1,5 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, TouchableOpacity } from 'react-native';
 import HeaderLogout from "@/utilities/HeaderLogout";
 
 import colors from "@/assets/colors";
@@ -14,7 +13,7 @@ import StatsScreen from "@/navigation/screens/StatsScreen";
 // screen names
 const screens_names = {
   Home: "Home",
-  Activity: "Activitys",
+  Activity: "Activities",
   Books: "Books",
   Stats: "Stats",
 };
