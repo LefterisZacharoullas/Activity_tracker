@@ -12,6 +12,9 @@ import {
 import images from "@/assets/images";
 import colors from '@/assets/colors';
 import { useState, useEffect } from 'react';
+import ActivityServices from '@/services/ActivityServices';
+import LoadingScreen from "@/navigation/screens/LoadingScreen"
+import ErrorScreen from "@/navigation/screens/ErrorScreen"
 
 // Включаем LayoutAnimation на Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -27,6 +30,41 @@ export default function HomeScreen() {
     { id: 5, value: "Drink water", checked: true },
     { id: 6, value: "Go for a walk", checked: false }
   ]);
+
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const check = async () => {
+      setLoading(true);
+      const res = await ActivityServices.getActivities();
+      setLoading(false);
+
+      if (res.status === 200) {
+        console.log("All is fine")
+      }
+      else if (res.status === 404) {
+        setError(
+          "No connection to server" +
+          "\nPlease connect to the internet");
+      } else if (res.status === 401) {
+        console.error("Unauthorized access - please log in.");
+        setError("Unauthorized access - please log in.");
+        logout();
+      return;
+      } else {
+        setError(res.error)
+      }
+    };
+    check();
+  }, []);
+
+  if (error) {
+    return <ErrorScreen error={error} />
+  } else if (loading) {
+    return <LoadingScreen />
+  }
+
 
   const toggleCheckbox = (id) => {
     LayoutAnimation.easeInEaseOut();
