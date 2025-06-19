@@ -33,7 +33,7 @@ async def create_user(request: Request, user: User_secret, db: Session = Depends
     username = db.scalars(stmt).one_or_none()
     if username:
         raise HTTPException(
-            status_code=400,
+            status_code=409,
             detail="User already registered"
         )
     

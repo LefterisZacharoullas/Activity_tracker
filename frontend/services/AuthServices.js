@@ -18,10 +18,10 @@ const AuthServices = {
             const { access_token } = res.data;
             console.log("User logged in successfully:", res.data);
             await AsyncStorage.setItem('token', access_token);
-            return { success: true, token: access_token };
+            return { success: true, token: access_token, status: res.status };
 
         } catch (error) {
-            return { success: false, error: error.message };
+            return { success: false, error: error.message, status: error?.response?.status };
         }
     },
 
@@ -61,19 +61,22 @@ const AuthServices = {
             {headers: {'Content-Type': 'application/json'}}
             );
             console.log("User registered successfully:", res.data);
-            return { success: true, user: res.data };
+            return { success: true, user: res.data, status: res.status };
         } catch (error) {
-            if (error.response) {
+            if (error?.response) {
                 const status = error.response.status;
                 if (status === 422) {
-                    return { error: "Validation error: " + error.response.data };
+                    return { error: "Validation error: " + error.message };
                 } else if (status === 409) {
                     return { error: "User already exists" };
-                } else {
-                    return { error: "Error registering user: " + error.response.data };
+                } else if (status === 404) {
+                    return {error: "Network error, Connect to the internet"}
+                }
+                else {
+                    return { error: "Error registering user: " + error.message };
                 }
             }
-            return { error: "Network or server error: " + error.message };
+            return { error: "Network or server error: " + error.message, status: error?.response?.status };
         }
     }
 }

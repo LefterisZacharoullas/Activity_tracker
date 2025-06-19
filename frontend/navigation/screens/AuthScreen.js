@@ -27,8 +27,11 @@ const Authscreen = () => {
     } else {
       response = await login(username, password);
     }
-
-    if (response?.error) {
+    if (response?.status === 404) {
+      Alert.alert("Network Error, please connect to the internet");
+      return;
+    }
+    else if (response?.error) {
       Alert.alert("Error", response.error);
       return;
     }
