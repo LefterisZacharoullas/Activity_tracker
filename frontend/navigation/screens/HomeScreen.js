@@ -8,13 +8,16 @@ import {
   LayoutAnimation,
   UIManager,
   Platform,
+  Alert,
 } from 'react-native';
 import images from "@/assets/images";
 import colors from '@/assets/colors';
 import { useState, useEffect } from 'react';
-import ActivityServices from '@/services/ActivityServices';
+import TodoServices from "@/services/TodoServices"
 import LoadingScreen from "@/navigation/screens/LoadingScreen"
 import ErrorScreen from "@/navigation/screens/ErrorScreen"
+import { useAuth } from '@/context/AuthContext';
+import AddTodoModal from '@/utilities/AddTodoModal';
 
 // Включаем LayoutAnimation на Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -22,6 +25,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 export default function HomeScreen() {
+  //{"date_created": "2025-06-06", "id": 1, "status_id": 1, "text": "Read 50 pages today", "user_id": 1}
   const [todos, setTodos] = useState([
     { id: 1, value: "Test Goal", checked: false },
     { id: 2, value: "Drink water", checked: true },
@@ -30,32 +34,53 @@ export default function HomeScreen() {
     { id: 5, value: "Drink water", checked: true },
     { id: 6, value: "Go for a walk", checked: false }
   ]);
-
+  // I know that my front will use only the 1 and 2 status
+  const [status, setStatus] = useState([
+    { id: 1, status: "Not started" },
+    { id: 2, status: "In Progress" },
+    { id: 3, status: "Completed" },
+  ]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const check = async () => {
-      setLoading(true);
-      const res = await ActivityServices.getActivities();
-      setLoading(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [newTodo, setnewTodo] = useState({
+    text: "",
+    date_created: new Date().toISOString().split('T')[0]
+  });
 
-      if (res.status === 200) {
-        console.log("All is fine")
-      }
-      else if (res.status === 404) {
-        setError(
-          "No connection to server" +
-          "\nPlease connect to the internet");
-      } else if (res.status === 401) {
-        console.error("Unauthorized access - please log in.");
-        setError("Unauthorized access - please log in.");
-        logout();
+  const { logout } = useAuth();
+  //I am using this to ensure the connection with the server and fill status
+  const check = async () => {
+    setLoading(true);
+    const res = await TodoServices.getTodobyStatus(1);
+    setLoading(false);
+
+    if (res.status === 200) {
+      console.log("Todos fetching succesfully", res.data);
+
+      const todosWithChecked = res.data.map(todo => ({
+        ...todo,
+        checked: todo.status_id !== 1, // To make the checked: false
+      }));
+
+      setTodos(todosWithChecked);
+    }
+    else if (res.status === 404) {
+      setError(
+        "No connection to server" +
+        "\nPlease connect to the internet");
+    } else if (res.status === 401) {
+      console.error("Unauthorized access - please log in.");
+      setError("Unauthorized access - please log in.");
+      logout();
       return;
-      } else {
-        setError(res.error)
-      }
-    };
+    } else {
+      setError(res.error)
+    }
+  };
+
+  useEffect(() => {
     check();
   }, []);
 
@@ -75,9 +100,40 @@ export default function HomeScreen() {
     );
   };
 
-  const handleDone = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setTodos((prev) => prev.filter(todo => !todo.checked));
+  const handleDone = async () => {
+    try {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      const checkedTodos = todos.filter(todo => todo.checked);
+
+      for (const todo of checkedTodos) {
+        const res = await TodoServices.patchTodoStatus(todo.id, 3);
+        if (res.status !== 200) {
+          Alert.alert("Error updating todo", todo.text);
+          return;
+        }
+      }
+
+      setTodos(prev => prev.filter(todo => !todo.checked));
+      await check(); // updtade data
+    } catch (error) {
+      Alert.alert("Error with the done", error);
+    }
+  };
+
+  // I have to make the post request
+  const onAddTodo = async (newTodo) => {
+    console.log("addTodo called");
+    setLoading(true);
+    const res = await TodoServices.postTodo(newTodo, 1);
+    setLoading(false);
+    if (res.status === 200) {
+      console.log("Todo succesfully created", res.data)
+      setTodos(prevdata => [...prevdata, { ...res.data, checked: false }]);
+    } else if (res.status === 422) {
+      Alert.alert(res.error)
+    } else {
+      setError(res.error)
+    }
   };
 
   const anyChecked = todos.some(todo => todo.checked);
@@ -110,7 +166,7 @@ export default function HomeScreen() {
                   item.checked && styles.todovaluesChecked,
                 ]}
               >
-                {item.value}
+                {item.text}
               </Text>
             </View>
           }
@@ -119,7 +175,7 @@ export default function HomeScreen() {
         {/* Button below the list, not overlapping */}
         <View style={{ alignItems: 'center', marginBottom: 20 }}>
           {!anyChecked ? (
-            <TouchableOpacity style={styles.addtodo} onPress={() => console.log('Add todo pressed')}>
+            <TouchableOpacity style={styles.addtodo} onPress={() => setModalVisible(true)}>
               <Text style={styles.buttonText}>+ Add Todo</Text>
             </TouchableOpacity>
           ) : (
@@ -128,6 +184,15 @@ export default function HomeScreen() {
             </TouchableOpacity>
           )}
         </View>
+
+        <AddTodoModal
+          modalVisible={modalVisible}
+          setModalVisible={setModalVisible}
+          newTodo={newTodo}
+          setnewTodo={setnewTodo}
+          onAddTodo={onAddTodo}
+        />
+
       </View>
     </View>
   );

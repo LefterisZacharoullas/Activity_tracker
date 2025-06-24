@@ -352,6 +352,26 @@ async def delete_user_todo(
     db.commit()
     return {"status" : "Successfully deleted"}
 
+@router.patch("/todo/{todo_id}/status/{status_id}", response_model= schemas.TodoOut)
+@limiter.limit("10/minute")
+async def patch_todo_status(
+    request: Request,
+    todo: Todo = Depends(dependencies.verify_todo_id),
+    status: Status = Depends(dependencies.verify_status_id),
+    current_user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Patching StatusId"""
+
+    if not todo in current_user.todo_tasks:
+        raise HTTPException(404, "This todo not Found")
+    
+    todo.status_id = status.id
+
+    db.commit()
+    db.refresh(todo)
+    return todo
+
 # ─────────────────────────────────────────────────────────────
 # 📝 Stats ENDPOINTS
 # ─────────────────────────────────────────────────────────────

@@ -81,7 +81,7 @@ class ReadingOut(ReadingCreate):
     model_config = ConfigDict(from_attributes=True)
 
 class TodoCreate(BaseModel):
-    text: str
+    text: str= Field(min_length=1, max_length=128)
     date_created: date
 
 class TodoOut(TodoCreate):
