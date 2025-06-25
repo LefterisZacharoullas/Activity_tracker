@@ -136,6 +136,19 @@ export default function HomeScreen() {
     }
   };
 
+  const handleDelete = async (id) => {
+    try {
+      const res = await TodoServices.deleteTodo(id);
+      if (res.status === 200){
+        console.log("Todo Succesfully deleted", res.data);
+        setTodos(prevData => prevData.filter(item => item.id !== id));
+      }
+    } catch (error) {
+      console.error("Error deleting todo", res.error);
+      Alert.alert("Error deleting todo", res.error)
+    }
+  }
+
   const anyChecked = todos.some(todo => todo.checked);
 
   return (
@@ -168,6 +181,11 @@ export default function HomeScreen() {
               >
                 {item.text}
               </Text>
+              <TouchableOpacity 
+                style={styles.deletebutton}
+                onPress={() => handleDelete(item.id)}>
+                  <Text> 🗑️ </Text>
+              </TouchableOpacity>
             </View>
           }
         />
@@ -230,6 +248,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   todos: {
+    display: "flex",
     paddingTop: 20,
     flexDirection: "row",
     alignItems: "center",
@@ -263,6 +282,7 @@ const styles = StyleSheet.create({
   todovalues: {
     fontSize: 16,
     color: colors.text,
+    flex: 1,
   },
   todovaluesChecked: {
     textDecorationLine: 'line-through',
@@ -273,4 +293,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
+  deletebutton: {
+    marginLeft: 10
+  }
 });

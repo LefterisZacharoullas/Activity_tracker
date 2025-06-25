@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import colors from "@/assets/colors"
 import ConfigActivityModal from './ConfigActivityModal'; // Assuming this is the path to your ConfigActivityModal component
 
