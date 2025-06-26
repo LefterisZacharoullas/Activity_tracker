@@ -32,6 +32,7 @@ class BookCreate(BaseModel):
 
 class BooksOut(BookCreate):
     id: int
+    users: list[UserOut]
     model_config = ConfigDict(from_attributes=True)
 
 class AuthorCreate(BaseModel):

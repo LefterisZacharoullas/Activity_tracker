@@ -201,15 +201,15 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   activityButton: {
-    position: 'sticky',
-    bottom: 15,
-    alignSelf: 'center',
     backgroundColor: colors.primary,
-    paddingVertical: 15,
-    paddingHorizontal: 34,
-    borderRadius: 12,
+    position: 'sticky',
+    alignSelf: 'center',
     alignItems: 'center',
-    elevation: 3, // Android shadow
+    bottom: 15,
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 15,
+    elevation: 5, // Android shadow
     shadowColor: '#000', // iOS shadow
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
