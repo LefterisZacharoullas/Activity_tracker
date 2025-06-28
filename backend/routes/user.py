@@ -170,11 +170,11 @@ async def get_users_activities(request: Request, current_user: Users = Depends(g
     """📚 Get all books saved by the current user."""
     return current_user.books
 
-@router.post("/book/{book_id}", response_model=schemas.BooksOut)
+@router.post("/book", response_model=schemas.BooksOut)
 @limiter.limit("10/minute")
 async def set_users_book(
     request: Request,
-    book: Books = Depends(dependencies.verify_book_id),
+    book: schemas.BookCreate,
     current_user: Users = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -183,12 +183,27 @@ async def set_users_book(
     - Book must exist.
     - Book must not already be in user's list.
     """
-    if book in current_user.books:
+
+    db_book = db.scalar(
+        select(Books).where(
+            book.book_name == Books.book_name,
+            book.last_page == Books.last_page,
+        )
+    )
+
+    if not db_book:
+        db_book = Books(**book.model_dump())
+        db.add(db_book)
+        db.commit()
+        db.refresh(db_book)
+
+    if db_book in current_user.books:
         raise HTTPException(400, "Book already in user's collection")
-    current_user.books.append(book)
+        
+    current_user.books.append(db_book)
     db.commit()
-    db.refresh(book)
-    return book
+    db.refresh(db_book)
+    return db_book
 
 @router.delete("/book/{book_id}")
 @limiter.limit("10/minute")

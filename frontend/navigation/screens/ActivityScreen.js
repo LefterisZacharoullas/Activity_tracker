@@ -32,7 +32,7 @@ export default function ActivityScreen() {
       setLoading(true);
       const res = await ActivityServices.getActivities();
       if (res.status >= 200 && res.status < 300) {
-        console.log("API response:", res.data);
+        console.log("Activities fetching succesfully:", res.data);
         setActivityData(res.data);
         setLoading(false);
       } else if (res.status === 401) {

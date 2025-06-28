@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -7,19 +7,48 @@ import {
     TouchableOpacity,
     Alert,
     Modal,
+    TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '@/assets/colors';
+import BookServices from "@/services/BookServices"
+import LoadingScreen from './LoadingScreen';
+import ErrorScreen from './ErrorScreen';
 
 export default function BooksScreen() {
-    const [books, setBooks] = useState([
-        { id: '1', title: '1984', maxPages: 328 },
-        { id: '2', title: 'Dune', maxPages: 412 },
-    ]);
+    const [books, setBooks] = useState([]);
     const [modalVisible, setmodalVisible] = useState(false);
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
-    const handleDelete = (id) => {
-        //Deleding method
+    useEffect(() => {
+        const loadData = async () => {
+            setLoading(true);
+            const res = await BookServices.getBook();
+            setLoading(false);
+            if (res.status === 200) {
+                console.log("Fetching book data Successfully");
+                setBooks(res.data)
+            }
+            else {
+                console.error("Error book data", res.data);
+                setError(res.error);
+            }
+        }
+        loadData();
+    }, [])
+
+
+    const handleDelete = async (id) => {
+        const res = await BookServices.deleteBook(id);
+        if (res.status === 200) {
+            console.log("Succesfully deleted", res.data);
+            setBooks(books.filter((item) => item.id !== id));
+            return;
+        } else {
+            console.error("Error deleting data");
+            setError("Error deleting data");
+        }
     };
 
     const handleSelect = (book) => {
@@ -30,8 +59,30 @@ export default function BooksScreen() {
         //Create Config button
     };
 
-    const handleAdd = () => {
-        //Create addButton
+    const handleAdd = async (newBook) => {
+        if (!newBook.book_name || !newBook.last_page) {
+            console.warn("Missing book name or pages");
+            Alert.alert("Please enter both book name and pages.");
+            return false;
+        }
+
+        setLoading(true);
+        const res = await BookServices.postBook(newBook);
+        setLoading(false);
+
+        if (res.status == 200) {
+            console.log("Succesfully posted newBook", res.data)
+            setBooks(prev => [...prev, res.data]);
+            return true;
+        } else if (res.status === 400) {
+            console.error("This book already in your collection")
+            Alert.alert("This book already in your collection")
+            return false;
+        }
+        else {
+            Alert.alert(res.error)
+            return false;
+        }
     };
 
     const renderItem = ({ item }) => (
@@ -40,8 +91,8 @@ export default function BooksScreen() {
             onPress={() => handleSelect(item)}
         >
             <View>
-                <Text style={styles.bookTitle}>{item.title}</Text>
-                <Text style={styles.bookSubtitle}>📄 {item.maxPages} pages</Text>
+                <Text style={styles.bookTitle}>{item.book_name}</Text>
+                <Text style={styles.bookSubtitle}>📄 {item.last_page} pages</Text>
             </View>
 
             <View style={styles.actions}>
@@ -62,7 +113,9 @@ export default function BooksScreen() {
         </TouchableOpacity>
     );
 
-    const AddBookModal = ({ modalVisible, setmodalVisible }) => {
+    const AddBookModal = ({ modalVisible, setmodalVisible, handleAdd }) => {
+        const [bookName, setBookName] = useState('');
+        const [lastPage, setLastPage] = useState('');
         return (
             <Modal
                 visible={modalVisible}
@@ -73,7 +126,25 @@ export default function BooksScreen() {
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
                         {/*TextInputs later */}
-                        
+
+                        <TextInput
+                            style={styles.input}
+                            placeholder='Book name'
+                            placeholderTextColor={colors.muted}
+                            value={bookName}
+                            onChangeText={setBookName}
+                        />
+
+                        <TextInput
+                            style={styles.input}
+                            placeholder='Max pages'
+                            placeholderTextColor={colors.muted}
+                            value={lastPage}
+                            onChangeText={setLastPage}
+                            keyboardType='numeric'
+                        />
+
+                        {/*TextInputs later */}
 
                         <View style={styles.buttonContainer}>
                             <TouchableOpacity
@@ -86,21 +157,29 @@ export default function BooksScreen() {
                             <TouchableOpacity
                                 style={styles.addButtonModal}
                                 onPress={() => {
-                                    console.log("Adding a book in the Modal");
+                                    handleAdd({
+                                        book_name: bookName,
+                                        last_page: lastPage,
+                                    });
                                     setmodalVisible(false);
                                 }}
                             >
                                 <Text style={styles.buttonText}>Add Book</Text>
                             </TouchableOpacity>
                         </View>
-
-
                     </View>
                 </View>
             </Modal>
         );
     };
 
+    if (error) {
+        return <ErrorScreen error={error}/>
+    }
+    
+    else if (loading) {
+        return <LoadingScreen/>
+    }
 
     return (
         <View style={styles.container}>
@@ -124,6 +203,7 @@ export default function BooksScreen() {
             <AddBookModal
                 modalVisible={modalVisible}
                 setmodalVisible={setmodalVisible}
+                handleAdd={handleAdd}
             />
         </View>
     );
