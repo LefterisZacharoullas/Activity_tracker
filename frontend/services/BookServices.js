@@ -31,6 +31,16 @@ const BookServices = {
             console.error("Error deleteing data");
             return ErrorResponse(error);
         }
+    },
+
+    async updateBook(id, book) {
+        try {
+            const res = await api.put(`${config.apiUrl}/user/book/${id}`, book)
+            return {data: res.data, status: res.status}
+        } catch (error) {
+            console.error("Error puting data");
+            return ErrorResponse(error);
+        }
     }
 }
 

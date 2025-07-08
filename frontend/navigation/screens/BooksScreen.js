@@ -27,7 +27,7 @@ export default function BooksScreen() {
             const res = await BookServices.getBook();
             setLoading(false);
             if (res.status === 200) {
-                console.log("Fetching book data Successfully");
+                console.log("Fetching book data Successfully", res.data);
                 setBooks(res.data)
             }
             else {
@@ -55,8 +55,24 @@ export default function BooksScreen() {
         //Create select logic
     };
 
-    const handleConfigure = (book) => {
-        //Create Config button
+    const handleConfigure = async (updatedBook) => {
+        if (!updatedBook.book_name || !updatedBook.last_page) {
+            Alert.alert("Please fill in all fields.");
+            return;
+        }
+        console.log("The updating data", updatedBook)
+        const res = await BookServices.updateBook(updatedBook.id, updatedBook);
+        if (res.status === 200) {
+            setBooks(prevData => prevData.map(item => item.id === updatedBook.id ? res.data : item));
+            console.log("Book updated:", res.data);
+        } else if (res.status === 400){
+            Alert.alert("This book already in your collection please delete the book")
+        } 
+        
+        
+        else {
+            Alert.alert("Failed to update book.");
+        }
     };
 
     const handleAdd = async (newBook) => {
@@ -85,33 +101,52 @@ export default function BooksScreen() {
         }
     };
 
-    const renderItem = ({ item }) => (
-        <TouchableOpacity
-            style={styles.bookItem}
-            onPress={() => handleSelect(item)}
-        >
-            <View>
-                <Text style={styles.bookTitle}>{item.book_name}</Text>
-                <Text style={styles.bookSubtitle}>📄 {item.last_page} pages</Text>
-            </View>
+    const BookItem = ({ item, handleDelete, handleSelect, handleConfigure }) => {
+        const [modalVisibleConfig, setmodalVisibleConfig] = useState(false);
+        const [configBook, setConfigBook] = useState({
+            id: item.id,
+            book_name: item.book_name,
+            last_page: item.last_page,
+        })
 
-            <View style={styles.actions}>
-                <TouchableOpacity
-                    style={styles.iconButton}
-                    onPress={() => handleConfigure(item)}
-                >
-                    <Ionicons name="settings-outline" size={22} color={colors.accent} />
-                </TouchableOpacity>
+        return (
+            <TouchableOpacity
+                style={styles.bookItem}
+                onPress={() => handleSelect(item)}
+            >
+                <View>
+                    <Text style={styles.bookTitle}>{item.book_name}</Text>
+                    <Text style={styles.bookSubtitle}>📄 {item.last_page} pages</Text>
+                </View>
 
-                <TouchableOpacity
-                    style={styles.iconButton}
-                    onPress={() => handleDelete(item.id)}
-                >
-                    <Ionicons name="trash-outline" size={22} color={colors.text} />
-                </TouchableOpacity>
-            </View>
-        </TouchableOpacity>
-    );
+                <View style={styles.actions}>
+                    <TouchableOpacity
+                        style={styles.iconButton}
+                        onPress={() => {
+                            setmodalVisibleConfig(true)
+                        }}
+                    >
+                        <Ionicons name="settings-outline" size={22} color={colors.accent} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.iconButton}
+                        onPress={() => handleDelete(item.id)}
+                    >
+                        <Ionicons name="trash-outline" size={22} color={colors.text} />
+                    </TouchableOpacity>
+                </View>
+
+                <ConfigBook
+                    modalVisibleConfig={modalVisibleConfig}
+                    setmodalVisibleConfig={setmodalVisibleConfig}
+                    handleConfigure={handleConfigure}
+                    configBook={configBook}
+                    setConfigBook={setConfigBook}
+                />
+            </TouchableOpacity>
+        )
+    }
 
     const AddBookModal = ({ modalVisible, setmodalVisible, handleAdd }) => {
         const [bookName, setBookName] = useState('');
@@ -173,14 +208,68 @@ export default function BooksScreen() {
         );
     };
 
-    if (error) {
-        return <ErrorScreen error={error}/>
-    }
-    
-    else if (loading) {
-        return <LoadingScreen/>
+    const ConfigBook = ({ modalVisibleConfig, setmodalVisibleConfig, handleConfigure, configBook, setConfigBook }) => {
+        return (
+            <Modal
+                visible={modalVisibleConfig}
+                animationType="slide"
+                transparent
+                onRequestClose={() => setmodalVisibleConfig(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder='Book name'
+                            placeholderTextColor={colors.muted}
+                            value={configBook.book_name}
+                            onChangeText={text => setConfigBook({...configBook, book_name: text})}
+                        />
+
+                        <TextInput
+                            style={styles.input}
+                            placeholder='Max pages'
+                            placeholderTextColor={colors.muted}
+                            value={String(configBook.last_page)}
+                            onChangeText={text => setConfigBook({...configBook, last_page: text})}
+                            keyboardType='numeric'
+                        />
+
+                        <View style={styles.buttonContainer}>
+                            <TouchableOpacity
+                                style={styles.cancelButton}
+                                onPress={() => setmodalVisibleConfig(false)}
+                            >
+                                <Text> Cancel </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.addButtonModal}
+                                onPress={() => {
+                                    handleConfigure(configBook)
+                                    setmodalVisibleConfig(false);
+                                }}
+                            >
+                                <Text style={styles.buttonText}>Add Book</Text>
+                            </TouchableOpacity>
+
+                        </View>
+
+                    </View>
+                </View>
+            </Modal>
+        )
     }
 
+    if (error) {
+        return <ErrorScreen error={error} />
+    }
+
+    else if (loading) {
+        return <LoadingScreen />
+    }
+
+    //Main 
     return (
         <View style={styles.container}>
             <View style={styles.header}>
@@ -190,9 +279,15 @@ export default function BooksScreen() {
 
             <FlatList
                 data={books}
-                renderItem={renderItem}
                 keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={{ paddingBottom: 100 }}
+                renderItem={({ item }) => <BookItem
+                    item={item}
+                    handleDelete={handleDelete}
+                    handleSelect={handleSelect}
+                    handleConfigure={handleConfigure}
+                />
+                }
                 style={{ marginTop: 20 }}
             />
 

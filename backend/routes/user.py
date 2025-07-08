@@ -205,6 +205,52 @@ async def set_users_book(
     db.refresh(db_book)
     return db_book
 
+@router.put("/book/{book_id}", response_model=schemas.BooksOut)
+@limiter.limit("10/minute")
+async def update_user_book(
+    request: Request,
+    update_book: schemas.BookCreate,
+    book: Books = Depends(dependencies.verify_book_id),
+    current_user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Updating the Book value"""
+
+    duplicate_book = db.scalar(
+        select(Books).where(
+            Books.book_name == update_book.book_name,
+            Books.last_page == update_book.last_page,
+        )
+    )
+
+    # Case 1: Already has this exact book
+    if duplicate_book in current_user.books:
+        raise HTTPException(400, "Book already in user's collection")
+
+    # Case 2: A different book with the same data exists ➜ switch to it
+    elif duplicate_book and book.id != duplicate_book.id:
+        current_user.books.remove(book)
+
+        if duplicate_book not in current_user.books:
+            current_user.books.append(duplicate_book)
+
+        if len(book.users) == 0:
+            db.delete(book)
+
+        db.commit()
+        return duplicate_book
+    
+    # Case 3: No book like this existing create a new book
+    else:
+        for k, v in update_book.model_dump().items():
+            if v is not None:
+                setattr(book, k, v)
+
+        db.commit()
+        db.refresh(book)
+        return book
+
+
 @router.delete("/book/{book_id}")
 @limiter.limit("10/minute")
 async def delete_user_book(
