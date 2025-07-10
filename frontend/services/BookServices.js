@@ -41,6 +41,17 @@ const BookServices = {
             console.error("Error puting data");
             return ErrorResponse(error);
         }
+    },
+
+    async postBookProgress(bookId, statusID, progress) {
+        try {
+            console.log("postBookProgress called with:", { bookId, statusID, progress }); // log input
+            const res = await api.post(`${config.apiUrl}/user/reading/${bookId}/status/${statusID}`, progress);
+            return {data: res.data, status: res.status}
+        } catch (error) {
+            console.error("Error to call postBookProgress")
+            return ErrorResponse(error);
+        }
     }
 }
 
