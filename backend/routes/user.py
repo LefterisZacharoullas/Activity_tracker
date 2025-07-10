@@ -437,7 +437,7 @@ async def patch_todo_status(
 # 📝 Stats ENDPOINTS
 # ─────────────────────────────────────────────────────────────
 
-@router.get("/user/stats", response_model= schemas.Stats)
+@router.get("/stats", response_model= schemas.Stats)
 @limiter.limit("25/minute")
 async def get_users_stats(
     request: Request,
