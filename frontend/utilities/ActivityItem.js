@@ -76,7 +76,7 @@ const ActivityItem = ({ item, onDeleteActivity, onConfigActivity, onSelectActivi
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.lightGray,
     padding: 20,
     marginBottom: 15,
     borderRadius: 16,

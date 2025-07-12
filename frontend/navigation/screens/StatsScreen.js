@@ -96,26 +96,25 @@ export default function StatsScreen() {
           <>
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Workout Summary</Text>
-              <Text>Total Activities: {data.activities.total_activities}</Text>
-              {Object.entries(data.activities.activities_per_range).map(
-                ([key, value]) => (
+              <Text>
+                Total Activities: {data.activities.total_activities}{" "}
+                {data.activities.total_activities === 1 ? "activity" : "activities"}
+              </Text>
+
+              {Object.keys(data.activities.activities_per_range).map((key) => {
+                const activities = data.activities.activities_per_range[key] || 0
+                const reps = data.activities.avg_reps_per_range[key] || 0
+                const weight = data.activities.avg_weight_per_range[key] || 0
+
+                return (
                   <Text key={key}>
-                    {formatRange(key)}: {value} activities
+                    {formatRange(key)}:{" "}
+                    {activities} {activities === 1 ? "activity" : "activities"},{" "}
+                    Avg. {reps} {reps === 1 ? "rep" : "reps"},{" "} Avg. {weight} kg
                   </Text>
                 )
-              )}
-              {Object.entries(data.activities.avg_reps_per_range).map(
-                ([key, value]) => (
-                  <Text key={key}>{formatRange(key)}: {value} reps</Text>
-                )
-              )}
-              {Object.entries(data.activities.avg_weight_per_range).map(
-                ([key, value]) => (
-                  <Text key={key}>{formatRange(key)}: {value} kg</Text>
-                )
-              )}
+              })}
             </View>
-
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Reading Summary</Text>
               <Text>Total Reading Sessions: {data.readings.total_readings}</Text>
@@ -135,7 +134,7 @@ export default function StatsScreen() {
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     flexGrow: 1,
   },
   title: {
@@ -166,10 +165,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   activeToggleText: {
-    color: '#fff',
+    color: colors.background,
   },
   card: {
-    backgroundColor: '#f9f9f9',
+    backgroundColor: colors.lightGray,
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
